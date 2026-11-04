@@ -28,7 +28,7 @@ export function stripePaymentProvider({ secretKey = process.env.STRIPE_SECRET_KE
         session = await stripe.checkout.sessions.create({
           // Let Stripe select eligible methods from the Dashboard configuration.
           mode: 'payment',
-          invoice_creation: { enabled: true },
+          invoice_creation: { enabled: false },
           adaptive_pricing: { enabled: false }, automatic_tax: { enabled: false }, allow_promotion_codes: false,
           client_reference_id: booking.id, customer_email: booking.customer_email,
           metadata,

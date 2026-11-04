@@ -28,11 +28,11 @@ stripe listen --forward-to localhost:3000/api/payments/stripe/webhook
 
 Use the listener's signing secret for local verification. Hosted endpoints use their own Dashboard signing secret. See [Stripe signature verification](https://docs.stripe.com/webhooks/signature). The code verifies the unmodified request body before applying an event. Browser redirects do not mark bookings paid.
 
-## Paid invoice emails
+## Invoice creation
 
-New Stripe Checkout sessions enable `invoice_creation: { enabled: true }` and pass the booking customer email as `customer_email`. In Stripe Dashboard, open Settings > Business > Customer emails and enable Successful payments. After successful payment, Stripe emails an invoice summary with links to the invoice and receipt PDFs. Complete the public business details and branding in Stripe before going live.
+New Stripe Checkout sessions explicitly disable post-payment invoice creation with `invoice_creation: { enabled: false }`. The booking customer email is still passed as `customer_email`.
 
-Deploy/restart the backend and create a new checkout attempt to use this setting; existing sessions are reused on retries and are not updated. Test payments do not automatically send receipt emails: inspect the generated invoice in Stripe and send a test receipt manually. No additional webhook is required for Stripe to send the email. One-time post-payment invoices have separate Stripe pricing. See [Stripe paid invoice documentation](https://docs.stripe.com/receipts#paid-invoice-receipts).
+Deploy/restart the backend and create a new checkout attempt to use this setting; existing sessions are reused on retries and are not updated. Payment receipt emails are controlled separately by Stripe Dashboard settings.
 
 ## Postman request
 
