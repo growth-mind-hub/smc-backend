@@ -12,8 +12,8 @@ Configure these server environment variables, then restart the server:
 GOOGLE_MAPS_API_KEY=your_google_distance_matrix_key
 STRIPE_SECRET_KEY=your_stripe_test_secret_key
 STRIPE_WEBHOOK_SECRET=your_stripe_webhook_signing_secret
-STRIPE_SUCCESS_URL=https://your-frontend.example/booking/success?session_id={CHECKOUT_SESSION_ID}
-STRIPE_CANCEL_URL=https://your-frontend.example/booking/cancel
+STRIPE_SUCCESS_URL=https://singapore-maxicabs.vercel.app/payment-success
+STRIPE_CANCEL_URL=https://singapore-maxicabs.vercel.app/payment-failed
 ```
 
 Use Stripe test credentials during development. Redirect URLs are configured by the backend; requests cannot override them. HTTPS is required in production. HTTP localhost redirects are allowed outside production. Missing Stripe credentials, webhook secret or invalid redirects return 503 `PAYMENT_NOT_CONFIGURED` before saving a booking.
