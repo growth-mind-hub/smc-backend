@@ -1,0 +1,31 @@
+import { vehicleImageHandlers } from './vehicle-image.js';
+import { Router } from 'express';
+import { requireAdmin } from '../../middleware/admin.js';
+import { adminController } from './admin.controller.js';
+import { vehicleController } from './vehicle.controller.js';
+import { homepageRecommendation } from '../recommendations/homepage-recommendation.js';
+export function vehicleRoutes(dependencies) {
+  const router = Router();
+  const controller = vehicleController(dependencies);
+  const admin = adminController(dependencies.vehicleStore);
+  const authorize = requireAdmin(dependencies.adminApiKey, dependencies.adminAuth);
+  const authorizeImage = requireAdmin(dependencies.adminApiKey, dependencies.adminAuth, { requireJson: false });
+  const images = vehicleImageHandlers(dependencies);
+  router.post('/vehicles/:id/image', authorizeImage, images.checkVehicle, images.upload, images.save);
+  router.delete('/vehicles/:id/image', authorizeImage, images.checkVehicle, images.remove);
+  router.get('/catalog/:id', controller.getCatalogEntry);
+  router.get('/vehicle-types', async (_req, res) => res.json({ vehicleTypes: await dependencies.vehicleStore.listTypes() }));
+  router.post('/vehicle-types', authorize, admin.createType);
+  router.patch('/vehicle-types/:id', authorize, admin.updateType);
+  router.get('/services', controller.listServices);
+  router.get('/vehicles', controller.listVehicles);
+  router.get('/vehicles/recommend', homepageRecommendation(dependencies.vehicleStore));
+  router.get('/vehicles/minimum-prices', controller.listMinimumPrices);
+  router.get('/vehicles/:id', controller.getVehicle);
+  router.post('/vehicles', authorize, controller.createVehicle);
+  router.patch('/vehicles/:id', authorize, admin.updateVehicle);
+  router.put('/vehicles/:id/prices/:service', authorize, admin.setPrice);
+  router.post('/services', authorize, admin.createService);
+  router.patch('/services/:code', authorize, admin.updateService);
+  return router;
+}

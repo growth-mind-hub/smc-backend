@@ -1,0 +1,1239 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Maxicab API ? Frontend handoff</title><style>*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;color:#1e293b;background:#f1f5f9;font:15px/1.6 system-ui,-apple-system,Segoe UI,sans-serif}main{max-width:1040px;margin:32px auto;padding:44px 52px;background:white;border:1px solid #e2e8f0;border-radius:12px}h1{font-size:32px;line-height:1.2;color:#0f172a}h2{margin-top:44px;padding-top:14px;border-top:2px solid #cbd5e1;color:#0f172a}h3{margin-top:32px;color:#0f766e}h4{margin-top:30px;padding:10px 12px;background:#ecfeff;border-left:4px solid #0f766e;font-size:17px;scroll-margin-top:20px}p,li{overflow-wrap:anywhere}a{color:#0f766e}code{font:13px/1.45 Consolas,ui-monospace,monospace;background:#f1f5f9;padding:1px 4px;border-radius:3px}pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px;padding:16px;line-height:1.4}pre code{padding:0;background:none}table{width:100%;border-collapse:collapse;font-size:13px}th,td{padding:9px 10px;border:1px solid #cbd5e1;text-align:left;vertical-align:top;overflow-wrap:anywhere}th{background:#e2e8f0}tbody tr:nth-child(even){background:#f8fafc}.table-wrap{overflow-x:auto}nav{padding:16px 20px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:6px}nav ul{list-style:none;padding:0;margin:0;columns:2;column-gap:24px}nav li{break-inside:avoid;padding:3px 0;font-size:13px}.level-2{font-weight:700;margin-top:10px}.level-4{padding-left:12px!important}.intro{color:#475569;font-size:13px}@media(max-width:720px){main{margin:0;padding:24px 18px;border:0;border-radius:0}nav ul{columns:1}table{min-width:620px}}@media print{@page{size:A4;margin:14mm}body{background:white;font-size:10pt}main{max-width:none;padding:0;margin:0;border:0}nav{display:none}h1{font-size:23pt}h2{font-size:16pt}h3,h4{break-after:avoid}h4{font-size:12pt}pre{font-size:8pt;break-inside:avoid}pre code{font-size:8pt}table{font-size:8pt;table-layout:fixed}thead{display:table-header-group}tr{break-inside:avoid}.table-wrap{overflow:visible}a{color:inherit;text-decoration:none}}</style></head><body><main><p class="intro">Frontend integration reference ? 5 October 2026 ? 24 endpoint contracts ? Open in a browser or print to PDF</p><nav aria-label="Contents"><strong>Contents</strong><ul><li class="level-2"><a href="#section-1">1. Connection, headers and authentication</a></li><li class="level-2"><a href="#section-3">2. Endpoint index</a></li><li class="level-2"><a href="#section-4">3. Frontend flow and identifiers</a></li><li class="level-2"><a href="#section-6">4. Requests and responses</a></li><li class="level-4"><a href="#section-8">1. List vehicle cards</a></li><li class="level-4"><a href="#section-9">2. Recommend a vehicle</a></li><li class="level-4"><a href="#section-10">3. Get one vehicle</a></li><li class="level-4"><a href="#section-11">4. List active services</a></li><li class="level-4"><a href="#section-12">5. List vehicle types</a></li><li class="level-4"><a href="#section-13">6. Resolve a vehicle/service price</a></li><li class="level-4"><a href="#section-15">7. List active add-ons</a></li><li class="level-4"><a href="#section-16">8. Calculate a quotation</a></li><li class="level-4"><a href="#section-17">9. Create booking and Stripe checkout</a></li><li class="level-4"><a href="#section-19">10. Create vehicle type</a></li><li class="level-4"><a href="#section-20">11. Update vehicle type</a></li><li class="level-4"><a href="#section-21">12. Create vehicle and rates</a></li><li class="level-4"><a href="#section-22">13. Update vehicle details</a></li><li class="level-4"><a href="#section-23">14. Set or replace one service rate</a></li><li class="level-4"><a href="#section-24">15. Create service</a></li><li class="level-4"><a href="#section-25">16. Update service</a></li><li class="level-4"><a href="#section-27">17. Create add-on</a></li><li class="level-4"><a href="#section-28">18. Update add-on</a></li><li class="level-4"><a href="#section-29">19. List distance rules</a></li><li class="level-4"><a href="#section-30">20. Create distance rule</a></li><li class="level-4"><a href="#section-31">21. Update distance rule</a></li><li class="level-4"><a href="#section-33">22. Process health</a></li><li class="level-4"><a href="#section-34">23. Database readiness</a></li><li class="level-4"><a href="#section-35">24. Stripe payment notification</a></li><li class="level-2"><a href="#section-36">5. Quote and checkout behavior</a></li><li class="level-2"><a href="#section-40">6. Common error contract</a></li><li class="level-2"><a href="#section-41">7. Postman handoff</a></li><li class="level-2"><a href="#section-42">8. Backend configuration and scope</a></li></ul></nav><h1 id="section-0">Maxicab API — Frontend handoff</h1>
+<p>Version: 5 October 2026. Verified against the current Express routes, validators and response builders. This is the complete reference for 24 distinct endpoint contracts; /api/v1 aliases share the same contracts.</p>
+<p>All examples contain illustrative data, not live quotes. Read real IDs and rates from the APIs. The example scenario uses an SGD 80 vehicle, 29.4 km driving route (+5), Meet &amp; Greet (+20), Baby Seat (+20), and two within-2-km stops (+20): total SGD 145. Do not assume the real route distance or total equals the example.</p>
+<h2 id="section-1">1. Connection, headers and authentication</h2>
+<ul><li>Local base URL: http://127.0.0.1:3000. Replace with the deployed backend URL.</li><li>API prefix: /api (or /api/v1). The /health and /ready paths are at the root and do not use a prefix.</li><li>JSON writes: Content-Type: application/json. UTF-8 JSON object bodies; unknown fields are generally rejected.</li><li>Public endpoints require no token. Admin endpoints require Authorization: Bearer &lt;ADMIN_API_KEY&gt;. Keep this secret in an authenticated dashboard backend, not in React bundles. This API does not implement admin user login.</li><li>Stripe webhook authenticates with Stripe-Signature and STRIPE_WEBHOOK_SECRET; it does not use ADMIN_API_KEY.</li><li>Checkout retry header: Idempotency-Key, preferably a UUID. Save it before the request and reuse for the same attempt.</li><li>X-Request-ID is included on responses. Error JSON includes requestId for support/debugging. Do not log customer information or secrets.</li><li>Standard API limit is 120 requests per minute per IP. HTTP 429 uses RATE_LIMITED and standard RateLimit headers. OPTIONS preflights are handled by CORS before the limiter.</li><li>JSON bodies are limited to 10 KB; Stripe raw webhook bodies to 64 KB. Many list/quote/checkout responses use Cache-Control: no-store.</li></ul>
+<h3 id="section-2">Browser CORS — current integration limitation</h3>
+<p>Allowed origins in src/app.js are https://singapore-maxicabs.vercel.app and https://www.singaporemaxicabs.com.sg. localhost origins are not currently allowed. Allowed custom request headers are Content-Type and Authorization only. A cross-origin browser request carrying Idempotency-Key will fail preflight until the backend allows that header or the frontend uses a same-origin server proxy. X-Request-ID and Idempotency-Key response headers are not currently exposed to cross-origin browser JavaScript. Postman is unaffected by browser CORS. Browser credential/cookie support is not enabled. Backend behavior has not been changed as part of this document.</p>
+<h2 id="section-3">2. Endpoint index</h2>
+<div class="table-wrap"><table><thead><tr><th>#</th><th>Method</th><th>Path</th><th>Access</th><th>HTTP success</th><th>Purpose</th></tr></thead><tbody><tr><td>1</td><td>GET</td><td>/api/vehicles</td><td>Public</td><td>200</td><td>List vehicle cards</td></tr><tr><td>2</td><td>GET</td><td>/api/vehicles/recommend</td><td>Public</td><td>200</td><td>Recommend a vehicle</td></tr><tr><td>3</td><td>GET</td><td>/api/vehicles/3</td><td>Public</td><td>200</td><td>Get one vehicle</td></tr><tr><td>4</td><td>GET</td><td>/api/services</td><td>Public</td><td>200</td><td>List active services</td></tr><tr><td>5</td><td>GET</td><td>/api/vehicle-types</td><td>Public</td><td>200</td><td>List vehicle types</td></tr><tr><td>6</td><td>GET</td><td>/api/catalog/12</td><td>Public</td><td>200</td><td>Resolve a vehicle/service price</td></tr><tr><td>7</td><td>GET</td><td>/api/add-ons</td><td>Public</td><td>200</td><td>List active add-ons</td></tr><tr><td>8</td><td>POST</td><td>/api/booking/quote</td><td>Public</td><td>200</td><td>Calculate a quotation</td></tr><tr><td>9</td><td>POST</td><td>/api/bookings/checkout</td><td>Public</td><td>200</td><td>Create booking and Stripe checkout</td></tr><tr><td>10</td><td>POST</td><td>/api/vehicle-types</td><td>Admin</td><td>201</td><td>Create vehicle type</td></tr><tr><td>11</td><td>PATCH</td><td>/api/vehicle-types/2</td><td>Admin</td><td>200</td><td>Update vehicle type</td></tr><tr><td>12</td><td>POST</td><td>/api/vehicles</td><td>Admin</td><td>201</td><td>Create vehicle and rates</td></tr><tr><td>13</td><td>PATCH</td><td>/api/vehicles/3</td><td>Admin</td><td>200</td><td>Update vehicle details</td></tr><tr><td>14</td><td>PUT</td><td>/api/vehicles/3/prices/arrival</td><td>Admin</td><td>200</td><td>Set or replace one service rate</td></tr><tr><td>15</td><td>POST</td><td>/api/services</td><td>Admin</td><td>201</td><td>Create service</td></tr><tr><td>16</td><td>PATCH</td><td>/api/services/city_tour</td><td>Admin</td><td>200</td><td>Update service</td></tr><tr><td>17</td><td>POST</td><td>/api/add-ons</td><td>Admin</td><td>201</td><td>Create add-on</td></tr><tr><td>18</td><td>PATCH</td><td>/api/add-ons/3</td><td>Admin</td><td>200</td><td>Update add-on</td></tr><tr><td>19</td><td>GET</td><td>/api/distance-pricing-rules</td><td>Admin</td><td>200</td><td>List distance rules</td></tr><tr><td>20</td><td>POST</td><td>/api/distance-pricing-rules</td><td>Admin</td><td>201</td><td>Create distance rule</td></tr><tr><td>21</td><td>PATCH</td><td>/api/distance-pricing-rules/2</td><td>Admin</td><td>200</td><td>Update distance rule</td></tr><tr><td>22</td><td>GET</td><td>/health</td><td>Public</td><td>200</td><td>Process health</td></tr><tr><td>23</td><td>GET</td><td>/ready</td><td>Public</td><td>200</td><td>Database readiness</td></tr><tr><td>24</td><td>POST</td><td>/api/payments/stripe/webhook</td><td>Stripe signature</td><td>200</td><td>Stripe payment notification</td></tr></tbody></table></div>
+<h2 id="section-4">3. Frontend flow and identifiers</h2>
+<ol><li>GET /api/vehicles and GET /api/services; render cards from data and rates from each vehicle.prices.</li><li>GET /api/vehicles/recommend?persons=5&amp;luggage=4 when counts are supplied. Keep all cards and show the badge only when recommendation is true.</li><li>Read add-ons from GET /api/add-ons and collect pickup/drop addresses plus selected IDs/quantities.</li><li>POST /api/booking/quote whenever the selection changes. Render quote fields only when quote_status is AVAILABLE. CONTACT_SUPPORT has no amounts; display the support action instead.</li><li>POST /api/bookings/checkout with customer information and the same selection, using a retained Idempotency-Key. The server can calculate a different fare from the earlier quote if prices/distance changed; use the returned amount.</li><li>Redirect to stripe_checkout_url. A redirect back to the success page is not payment verification. Stripe's verified webhook updates the booking in PostgreSQL.</li></ol>
+<div class="table-wrap"><table><thead><tr><th>Identifier</th><th>Example</th><th>Source / use</th></tr></thead><tbody><tr><td>vehicle_id</td><td>3 (integer)</td><td>data[].id; quote and checkout</td></tr><tr><td>service_id</td><td>1 (integer)</td><td>price.serviceId or services[].id; quote and checkout</td></tr><tr><td>service code</td><td>arrival (string)</td><td>Key in vehicle.prices; used in admin price PUT and service PATCH paths</td></tr><tr><td>catalogId</td><td>12 (integer)</td><td>Exact vehicle/service price record; GET /catalog/:id</td></tr><tr><td>add_on_id</td><td>2 (integer)</td><td>add-ons data[].id; selected quantities</td></tr><tr><td>booking_id</td><td>BK20261005001 (string)</td><td>Public number returned by checkout, also Stripe metadata</td></tr><tr><td>booking_uuid</td><td>UUID (string)</td><td>Internal correlation for signed Stripe events, not a checkout request field</td></tr></tbody></table></div>
+<p>Vehicle/service responses use camelCase fields; quote, checkout, add-on and distance-rule requests use the snake_case fields shown. There is no universal success wrapper: use each endpoint's documented response. Numeric money fields represent major currency units unless named amountMinor or Stripe amount_total. Format displayed currency with the price's currency; do not recompute authoritative totals in React.</p>
+<h3 id="section-5">Validation reference</h3>
+<div class="table-wrap"><table><thead><tr><th>Object / field</th><th>Contract</th></tr></thead><tbody><tr><td>persons / luggage query</td><td>Integer text values: persons 1–100; luggage 0–100; both supplied together; no repeated/unknown keys</td></tr><tr><td>vehicle/service/add-on selection IDs</td><td>Positive integers up to 2,147,483,647 for quote/checkout; discover from API</td></tr><tr><td>pickup / drop</td><td>Object with only address; nonblank string up to 500 characters; no coordinates, place IDs or client distance supported in current quote contract</td></tr><tr><td>add_ons</td><td>Required array, 0–100 selections; each has only add_on_id and integer quantity 1–100; no duplicate IDs</td></tr><tr><td>FIXED / PER_STOP</td><td>FIXED quantity must be 1; PER_STOP multiplies database price by quantity</td></tr><tr><td>hours</td><td>Only for hourly services; integer 1–24, meeting configured minimumHours</td></tr><tr><td>customer</td><td>Required checkout object with only name (1–150 trimmed characters), email (valid, up to 254), phone (+ followed by 7–15 digits, first digit nonzero)</td></tr><tr><td>payment_method</td><td>Required checkout value STRIPE; no CASH alternative</td></tr><tr><td>checkout money</td><td>Client amount/currency rejected; backend SGD total must be 0.50–999999.99</td></tr><tr><td>Idempotency-Key</td><td>Optional header, 8–128 letters/digits/underscores/hyphens; UUID recommended</td></tr><tr><td>vehicle name / description</td><td>name 1–120 trimmed characters; description string up to 1,000</td></tr><tr><td>passengerCapacity / luggageCapacity</td><td>Null or integer; passenger 1–100; luggage 0–100</td></tr><tr><td>vehicleTypeId / imageUrl</td><td>Nullable positive type ID; nullable HTTP(S) image URL up to 2,048 characters</td></tr><tr><td>vehicle / service status</td><td>active or inactive (lowercase); vehicle status OR isActive boolean, not both</td></tr><tr><td>vehicle / price currency</td><td>Three uppercase letters; vehicle POST requires currency; current quote selections must share currency</td></tr><tr><td>amounts / add-on price / surcharge</td><td>Numbers 0–1,000,000 with at most 2 decimals; strings are rejected</td></tr><tr><td>service code / name / unit</td><td>code: 1–64 lowercase letters/digits/underscores starting with a letter; name 1–120; unit trip or hour; code/unit immutable after creation</td></tr><tr><td>service sortOrder</td><td>Integer 0–100000</td></tr><tr><td>price validFrom / validTo</td><td>ISO timestamp with timezone or null; validTo later than validFrom (current time if start omitted/null); eligibility includes start and excludes end</td></tr><tr><td>add-on code / name / description</td><td>code: 1–50 uppercase letters/digits/underscores starting with a letter; name 1–150; description up to 1,000</td></tr><tr><td>pricing_type / add-on status</td><td>FIXED or PER_STOP; ACTIVE or INACTIVE (uppercase)</td></tr><tr><td>distance bounds</td><td>Nonnegative numbers up to 9,999,999 with at most 3 decimals; maximum null means unbounded; finite maximum greater than minimum</td></tr><tr><td>distance flags</td><td>min_inclusive, max_inclusive, is_contact_support booleans; ACTIVE/INACTIVE status; support rules require surcharge 0</td></tr></tbody></table></div>
+<h2 id="section-6">4. Requests and responses</h2>
+<h3 id="section-7">Public catalog</h3>
+<h4 id="section-8">1. List vehicle cards</h4>
+<p><strong>GET /api/vehicles</strong></p>
+<p>Access: Public.</p>
+<p>Request body: none.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;success&quot;: true,
+  &quot;requirements&quot;: null,
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: 3,
+      &quot;name&quot;: &quot;Toyota Alphard / Vellfire&quot;,
+      &quot;description&quot;: &quot;Executive MPV&quot;,
+      &quot;passengerCapacity&quot;: 6,
+      &quot;currency&quot;: &quot;SGD&quot;,
+      &quot;vehicleTypeId&quot;: 2,
+      &quot;vehicleType&quot;: &quot;MPV&quot;,
+      &quot;imageUrl&quot;: &quot;https://example.com/images/alphard.jpg&quot;,
+      &quot;status&quot;: &quot;active&quot;,
+      &quot;updatedAt&quot;: &quot;2026-10-05T00:00:00.000Z&quot;,
+      &quot;luggageCapacity&quot;: 6,
+      &quot;isActive&quot;: true,
+      &quot;createdAt&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+      &quot;prices&quot;: {
+        &quot;arrival&quot;: {
+          &quot;catalogId&quot;: 12,
+          &quot;serviceId&quot;: 1,
+          &quot;amount&quot;: 80,
+          &quot;amountMinor&quot;: 8000,
+          &quot;currency&quot;: &quot;SGD&quot;,
+          &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+          &quot;validTo&quot;: null,
+          &quot;status&quot;: &quot;active&quot;,
+          &quot;isFrom&quot;: false,
+          &quot;unit&quot;: &quot;trip&quot;,
+          &quot;serviceName&quot;: &quot;Arrival&quot;,
+          &quot;minimumHours&quot;: null
+        },
+        &quot;departure_transfer&quot;: {
+          &quot;catalogId&quot;: 13,
+          &quot;serviceId&quot;: 2,
+          &quot;amount&quot;: 70,
+          &quot;amountMinor&quot;: 7000,
+          &quot;currency&quot;: &quot;SGD&quot;,
+          &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+          &quot;validTo&quot;: null,
+          &quot;status&quot;: &quot;active&quot;,
+          &quot;isFrom&quot;: false,
+          &quot;unit&quot;: &quot;trip&quot;,
+          &quot;serviceName&quot;: &quot;Departure Transfer&quot;,
+          &quot;minimumHours&quot;: null
+        },
+        &quot;hourly&quot;: {
+          &quot;catalogId&quot;: 14,
+          &quot;serviceId&quot;: 3,
+          &quot;amount&quot;: 65,
+          &quot;amountMinor&quot;: 6500,
+          &quot;currency&quot;: &quot;SGD&quot;,
+          &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+          &quot;validTo&quot;: null,
+          &quot;status&quot;: &quot;active&quot;,
+          &quot;isFrom&quot;: false,
+          &quot;unit&quot;: &quot;hour&quot;,
+          &quot;serviceName&quot;: &quot;Hourly&quot;,
+          &quot;minimumHours&quot;: 3
+        }
+      },
+      &quot;recommendation&quot;: false
+    }
+  ]
+}</code></pre>
+<p>No request body. Optional query parameters: persons and luggage, supplied together. Without counts, requirements is null and all recommendation flags are false. Only active vehicles are listed. Every card remains in the result after recommendation; an empty catalog returns data: []. No top-level vehicles alias is returned.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT for unknown, incomplete, repeated or invalid query parameters.</p>
+<h4 id="section-9">2. Recommend a vehicle</h4>
+<p><strong>GET /api/vehicles/recommend?persons=5&amp;luggage=4</strong></p>
+<p>Access: Public.</p>
+<p>Request body: none.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;success&quot;: true,
+  &quot;requirements&quot;: {
+    &quot;persons&quot;: 5,
+    &quot;luggage&quot;: 4
+  },
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: 3,
+      &quot;name&quot;: &quot;Toyota Alphard / Vellfire&quot;,
+      &quot;description&quot;: &quot;Executive MPV&quot;,
+      &quot;passengerCapacity&quot;: 6,
+      &quot;currency&quot;: &quot;SGD&quot;,
+      &quot;vehicleTypeId&quot;: 2,
+      &quot;vehicleType&quot;: &quot;MPV&quot;,
+      &quot;imageUrl&quot;: &quot;https://example.com/images/alphard.jpg&quot;,
+      &quot;status&quot;: &quot;active&quot;,
+      &quot;updatedAt&quot;: &quot;2026-10-05T00:00:00.000Z&quot;,
+      &quot;luggageCapacity&quot;: 6,
+      &quot;isActive&quot;: true,
+      &quot;createdAt&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+      &quot;prices&quot;: {
+        &quot;arrival&quot;: {
+          &quot;catalogId&quot;: 12,
+          &quot;serviceId&quot;: 1,
+          &quot;amount&quot;: 80,
+          &quot;amountMinor&quot;: 8000,
+          &quot;currency&quot;: &quot;SGD&quot;,
+          &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+          &quot;validTo&quot;: null,
+          &quot;status&quot;: &quot;active&quot;,
+          &quot;isFrom&quot;: false,
+          &quot;unit&quot;: &quot;trip&quot;,
+          &quot;serviceName&quot;: &quot;Arrival&quot;,
+          &quot;minimumHours&quot;: null
+        },
+        &quot;departure_transfer&quot;: {
+          &quot;catalogId&quot;: 13,
+          &quot;serviceId&quot;: 2,
+          &quot;amount&quot;: 70,
+          &quot;amountMinor&quot;: 7000,
+          &quot;currency&quot;: &quot;SGD&quot;,
+          &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+          &quot;validTo&quot;: null,
+          &quot;status&quot;: &quot;active&quot;,
+          &quot;isFrom&quot;: false,
+          &quot;unit&quot;: &quot;trip&quot;,
+          &quot;serviceName&quot;: &quot;Departure Transfer&quot;,
+          &quot;minimumHours&quot;: null
+        },
+        &quot;hourly&quot;: {
+          &quot;catalogId&quot;: 14,
+          &quot;serviceId&quot;: 3,
+          &quot;amount&quot;: 65,
+          &quot;amountMinor&quot;: 6500,
+          &quot;currency&quot;: &quot;SGD&quot;,
+          &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+          &quot;validTo&quot;: null,
+          &quot;status&quot;: &quot;active&quot;,
+          &quot;isFrom&quot;: false,
+          &quot;unit&quot;: &quot;hour&quot;,
+          &quot;serviceName&quot;: &quot;Hourly&quot;,
+          &quot;minimumHours&quot;: 3
+        }
+      },
+      &quot;recommendation&quot;: true
+    }
+  ]
+}</code></pre>
+<p>Both counts are required: persons integer 1–100; luggage integer 0–100. GET /vehicles?persons=5&amp;luggage=4 produces the same structure. A single best-fitting eligible card gets recommendation: true; all others remain with false. Unknown capacities and unpriced vehicles cannot be recommended. Ranking minimizes total unused seats and luggage capacity, then passenger capacity, luggage capacity and vehicle ID. If no vehicle fits, HTTP 200 still returns all cards with false. recommendation=false does not mean unsuitable.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT.</p>
+<h4 id="section-10">3. Get one vehicle</h4>
+<p><strong>GET /api/vehicles/3</strong></p>
+<p>Access: Public.</p>
+<p>Request body: none.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;vehicle&quot;: {
+    &quot;id&quot;: 3,
+    &quot;name&quot;: &quot;Toyota Alphard / Vellfire&quot;,
+    &quot;description&quot;: &quot;Executive MPV&quot;,
+    &quot;passengerCapacity&quot;: 6,
+    &quot;currency&quot;: &quot;SGD&quot;,
+    &quot;vehicleTypeId&quot;: 2,
+    &quot;vehicleType&quot;: &quot;MPV&quot;,
+    &quot;imageUrl&quot;: &quot;https://example.com/images/alphard.jpg&quot;,
+    &quot;status&quot;: &quot;active&quot;,
+    &quot;updatedAt&quot;: &quot;2026-10-05T00:00:00.000Z&quot;,
+    &quot;luggageCapacity&quot;: 6,
+    &quot;isActive&quot;: true,
+    &quot;createdAt&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+    &quot;prices&quot;: {
+      &quot;arrival&quot;: {
+        &quot;catalogId&quot;: 12,
+        &quot;serviceId&quot;: 1,
+        &quot;amount&quot;: 80,
+        &quot;amountMinor&quot;: 8000,
+        &quot;currency&quot;: &quot;SGD&quot;,
+        &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+        &quot;validTo&quot;: null,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;isFrom&quot;: false,
+        &quot;unit&quot;: &quot;trip&quot;,
+        &quot;serviceName&quot;: &quot;Arrival&quot;,
+        &quot;minimumHours&quot;: null
+      },
+      &quot;departure_transfer&quot;: {
+        &quot;catalogId&quot;: 13,
+        &quot;serviceId&quot;: 2,
+        &quot;amount&quot;: 70,
+        &quot;amountMinor&quot;: 7000,
+        &quot;currency&quot;: &quot;SGD&quot;,
+        &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+        &quot;validTo&quot;: null,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;isFrom&quot;: false,
+        &quot;unit&quot;: &quot;trip&quot;,
+        &quot;serviceName&quot;: &quot;Departure Transfer&quot;,
+        &quot;minimumHours&quot;: null
+      },
+      &quot;hourly&quot;: {
+        &quot;catalogId&quot;: 14,
+        &quot;serviceId&quot;: 3,
+        &quot;amount&quot;: 65,
+        &quot;amountMinor&quot;: 6500,
+        &quot;currency&quot;: &quot;SGD&quot;,
+        &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+        &quot;validTo&quot;: null,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;isFrom&quot;: false,
+        &quot;unit&quot;: &quot;hour&quot;,
+        &quot;serviceName&quot;: &quot;Hourly&quot;,
+        &quot;minimumHours&quot;: 3
+      }
+    }
+  }
+}</code></pre>
+<p>Path id is the vehicle ID. The single-record response has no recommendation field. Current implementation can return an inactive vehicle by ID; list and quote endpoints apply active visibility filters.</p>
+<p>Endpoint-specific errors: 404 NOT_FOUND for a missing vehicle.</p>
+<h4 id="section-11">4. List active services</h4>
+<p><strong>GET /api/services</strong></p>
+<p>Access: Public.</p>
+<p>Request body: none.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;services&quot;: [
+    {
+      &quot;id&quot;: 1,
+      &quot;code&quot;: &quot;arrival&quot;,
+      &quot;name&quot;: &quot;Arrival&quot;,
+      &quot;unit&quot;: &quot;trip&quot;,
+      &quot;status&quot;: &quot;active&quot;,
+      &quot;sortOrder&quot;: 0
+    },
+    {
+      &quot;id&quot;: 2,
+      &quot;code&quot;: &quot;departure_transfer&quot;,
+      &quot;name&quot;: &quot;Departure Transfer&quot;,
+      &quot;unit&quot;: &quot;trip&quot;,
+      &quot;status&quot;: &quot;active&quot;,
+      &quot;sortOrder&quot;: 1
+    },
+    {
+      &quot;id&quot;: 3,
+      &quot;code&quot;: &quot;hourly&quot;,
+      &quot;name&quot;: &quot;Hourly&quot;,
+      &quot;unit&quot;: &quot;hour&quot;,
+      &quot;status&quot;: &quot;active&quot;,
+      &quot;sortOrder&quot;: 2
+    }
+  ]
+}</code></pre>
+<p>No body. Read service IDs and codes dynamically. Services are sorted by sortOrder then code. A service exists independently of whether a selected vehicle has a configured price; offer only prices present on that vehicle.</p>
+<h4 id="section-12">5. List vehicle types</h4>
+<p><strong>GET /api/vehicle-types</strong></p>
+<p>Access: Public.</p>
+<p>Request body: none.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;vehicleTypes&quot;: [
+    {
+      &quot;id&quot;: 2,
+      &quot;name&quot;: &quot;MPV&quot;,
+      &quot;description&quot;: &quot;Multi-purpose vehicle&quot;
+    }
+  ]
+}</code></pre>
+<p>No body. Types have id, name and description.</p>
+<h4 id="section-13">6. Resolve a vehicle/service price</h4>
+<p><strong>GET /api/catalog/12</strong></p>
+<p>Access: Public.</p>
+<p>Request body: none.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;catalog&quot;: {
+    &quot;catalogId&quot;: 12,
+    &quot;vehicleId&quot;: 3,
+    &quot;vehicleName&quot;: &quot;Toyota Alphard / Vellfire&quot;,
+    &quot;currency&quot;: &quot;SGD&quot;,
+    &quot;service&quot;: &quot;arrival&quot;,
+    &quot;price&quot;: {
+      &quot;catalogId&quot;: 12,
+      &quot;serviceId&quot;: 1,
+      &quot;amount&quot;: 80,
+      &quot;amountMinor&quot;: 8000,
+      &quot;currency&quot;: &quot;SGD&quot;,
+      &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+      &quot;validTo&quot;: null,
+      &quot;status&quot;: &quot;active&quot;,
+      &quot;isFrom&quot;: false,
+      &quot;unit&quot;: &quot;trip&quot;,
+      &quot;serviceName&quot;: &quot;Arrival&quot;,
+      &quot;minimumHours&quot;: null
+    }
+  }
+}</code></pre>
+<p>Path id is catalogId, not vehicle ID. Resolves an active vehicle/service price valid now. The ID survives rate edits and does not lock a quote. Quote and checkout currently take vehicle_id plus service_id, not catalogId.</p>
+<p>Endpoint-specific errors: 404 NOT_FOUND for missing/ineligible catalog entries.</p>
+<h3 id="section-14">Public booking flow</h3>
+<h4 id="section-15">7. List active add-ons</h4>
+<p><strong>GET /api/add-ons</strong></p>
+<p>Access: Public.</p>
+<p>Request body: none.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;success&quot;: true,
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: 1,
+      &quot;code&quot;: &quot;NIGHT_TRAVEL&quot;,
+      &quot;name&quot;: &quot;Travelling between 23:30–06:30&quot;,
+      &quot;description&quot;: &quot;&quot;,
+      &quot;pricing_type&quot;: &quot;FIXED&quot;,
+      &quot;price&quot;: 10,
+      &quot;currency&quot;: &quot;SGD&quot;,
+      &quot;status&quot;: &quot;ACTIVE&quot;,
+      &quot;created_at&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;
+    },
+    {
+      &quot;id&quot;: 2,
+      &quot;code&quot;: &quot;MEET_GREET&quot;,
+      &quot;name&quot;: &quot;Arrival Meet &amp; Greet&quot;,
+      &quot;description&quot;: &quot;&quot;,
+      &quot;pricing_type&quot;: &quot;FIXED&quot;,
+      &quot;price&quot;: 20,
+      &quot;currency&quot;: &quot;SGD&quot;,
+      &quot;status&quot;: &quot;ACTIVE&quot;,
+      &quot;created_at&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;
+    },
+    {
+      &quot;id&quot;: 3,
+      &quot;code&quot;: &quot;BABY_SEAT&quot;,
+      &quot;name&quot;: &quot;Baby Seat&quot;,
+      &quot;description&quot;: &quot;&quot;,
+      &quot;pricing_type&quot;: &quot;FIXED&quot;,
+      &quot;price&quot;: 20,
+      &quot;currency&quot;: &quot;SGD&quot;,
+      &quot;status&quot;: &quot;ACTIVE&quot;,
+      &quot;created_at&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;
+    },
+    {
+      &quot;id&quot;: 4,
+      &quot;code&quot;: &quot;STOP_WITHIN_2KM&quot;,
+      &quot;name&quot;: &quot;Additional Stop within 2 km&quot;,
+      &quot;description&quot;: &quot;&quot;,
+      &quot;pricing_type&quot;: &quot;PER_STOP&quot;,
+      &quot;price&quot;: 10,
+      &quot;currency&quot;: &quot;SGD&quot;,
+      &quot;status&quot;: &quot;ACTIVE&quot;,
+      &quot;created_at&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;
+    },
+    {
+      &quot;id&quot;: 5,
+      &quot;code&quot;: &quot;STOP_OVER_2KM&quot;,
+      &quot;name&quot;: &quot;Additional Stop more than 2 km&quot;,
+      &quot;description&quot;: &quot;&quot;,
+      &quot;pricing_type&quot;: &quot;PER_STOP&quot;,
+      &quot;price&quot;: 20,
+      &quot;currency&quot;: &quot;SGD&quot;,
+      &quot;status&quot;: &quot;ACTIVE&quot;,
+      &quot;created_at&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;
+    }
+  ]
+}</code></pre>
+<p>No body. Prices are numeric major currency units. IDs and rates come from the API. FIXED selections require quantity 1; PER_STOP options accept quantities. Status values here are uppercase. Night travel is manually selected; no pickup timestamp or automatic night detection is implemented. Meet &amp; Greet is not automatically restricted to an arrival service.</p>
+<h4 id="section-16">8. Calculate a quotation</h4>
+<p><strong>POST /api/booking/quote</strong></p>
+<p>Access: Public.</p>
+<p>Request body:</p>
+<pre><code>{
+  &quot;vehicle_id&quot;: 3,
+  &quot;service_id&quot;: 1,
+  &quot;pickup&quot;: {
+    &quot;address&quot;: &quot;Changi Airport Terminal 1&quot;
+  },
+  &quot;drop&quot;: {
+    &quot;address&quot;: &quot;Marina Bay Sands&quot;
+  },
+  &quot;add_ons&quot;: [
+    {
+      &quot;add_on_id&quot;: 2,
+      &quot;quantity&quot;: 1
+    },
+    {
+      &quot;add_on_id&quot;: 3,
+      &quot;quantity&quot;: 1
+    },
+    {
+      &quot;add_on_id&quot;: 4,
+      &quot;quantity&quot;: 2
+    }
+  ]
+}</code></pre>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;success&quot;: true,
+  &quot;quote_status&quot;: &quot;AVAILABLE&quot;,
+  &quot;quote&quot;: {
+    &quot;vehicle&quot;: {
+      &quot;id&quot;: 3,
+      &quot;name&quot;: &quot;Toyota Alphard / Vellfire&quot;,
+      &quot;price&quot;: 80
+    },
+    &quot;service&quot;: {
+      &quot;id&quot;: 1,
+      &quot;name&quot;: &quot;Arrival&quot;,
+      &quot;unit&quot;: &quot;trip&quot;
+    },
+    &quot;catalog_id&quot;: 12,
+    &quot;add_ons&quot;: [
+      {
+        &quot;id&quot;: 2,
+        &quot;code&quot;: &quot;MEET_GREET&quot;,
+        &quot;name&quot;: &quot;Arrival Meet &amp; Greet&quot;,
+        &quot;pricing_type&quot;: &quot;FIXED&quot;,
+        &quot;quantity&quot;: 1,
+        &quot;unit_price&quot;: 20,
+        &quot;amount&quot;: 20
+      },
+      {
+        &quot;id&quot;: 3,
+        &quot;code&quot;: &quot;BABY_SEAT&quot;,
+        &quot;name&quot;: &quot;Baby Seat&quot;,
+        &quot;pricing_type&quot;: &quot;FIXED&quot;,
+        &quot;quantity&quot;: 1,
+        &quot;unit_price&quot;: 20,
+        &quot;amount&quot;: 20
+      },
+      {
+        &quot;id&quot;: 4,
+        &quot;code&quot;: &quot;STOP_WITHIN_2KM&quot;,
+        &quot;name&quot;: &quot;Additional Stop within 2 km&quot;,
+        &quot;pricing_type&quot;: &quot;PER_STOP&quot;,
+        &quot;quantity&quot;: 2,
+        &quot;unit_price&quot;: 10,
+        &quot;amount&quot;: 20
+      }
+    ],
+    &quot;vehicle_amount&quot;: 80,
+    &quot;add_on_amount&quot;: 60,
+    &quot;total_amount&quot;: 145,
+    &quot;currency&quot;: &quot;SGD&quot;,
+    &quot;route&quot;: {
+      &quot;pickup&quot;: &quot;Changi Airport Terminal 1&quot;,
+      &quot;drop&quot;: &quot;Marina Bay Sands&quot;,
+      &quot;distance_km&quot;: 29.4
+    },
+    &quot;distance_charge&quot;: {
+      &quot;rule_id&quot;: 2,
+      &quot;rule&quot;: &quot;[28,30) km&quot;,
+      &quot;amount&quot;: 5
+    },
+    &quot;distance_amount&quot;: 5
+  }
+}</code></pre>
+<p>Pickup and drop addresses are required. Google Distance Matrix supplies driving meters; the backend selects a database distance bracket and adds vehicle fare + distance surcharge + add-ons. The response keeps the quote wrapper. Send add_ons: [] for no extras. For an hourly service, also send hours: 3 (or another integer 1–24 meeting minimumHours); the response includes quote.hours and vehicle_amount is hourly rate × hours. Trip services reject hours. Never send prices, currency, client distance or totals. The 29.4 km route is illustrative, not a guaranteed Google result. Quotes do not save a booking or reserve inventory.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT; 404 NOT_FOUND for inactive/missing selections; 409 QUOTE_UNAVAILABLE for isFrom fares; 422 ROUTE_NOT_FOUND; 503 DISTANCE_UNAVAILABLE or DISTANCE_PRICING_UNAVAILABLE.</p>
+<p>Alternate HTTP 200 contact-support response:</p>
+<pre><code>{
+  &quot;success&quot;: true,
+  &quot;quote_status&quot;: &quot;CONTACT_SUPPORT&quot;,
+  &quot;route&quot;: {
+    &quot;pickup&quot;: &quot;Changi Airport Terminal 1&quot;,
+    &quot;drop&quot;: &quot;Marina Bay Sands&quot;,
+    &quot;distance_km&quot;: 38.7
+  },
+  &quot;distance&quot;: {
+    &quot;value&quot;: 38.7,
+    &quot;unit&quot;: &quot;km&quot;
+  },
+  &quot;message&quot;: &quot;This route requires a customized quotation. Please contact our support team via WhatsApp.&quot;,
+  &quot;whatsapp&quot;: {
+    &quot;enabled&quot;: true
+  }
+}</code></pre>
+<h4 id="section-17">9. Create booking and Stripe checkout</h4>
+<p><strong>POST /api/bookings/checkout</strong></p>
+<p>Access: Public.</p>
+<p>Request body:</p>
+<pre><code>{
+  &quot;customer&quot;: {
+    &quot;name&quot;: &quot;John Smith&quot;,
+    &quot;email&quot;: &quot;john@example.com&quot;,
+    &quot;phone&quot;: &quot;+6591234567&quot;
+  },
+  &quot;vehicle_id&quot;: 3,
+  &quot;service_id&quot;: 1,
+  &quot;pickup&quot;: {
+    &quot;address&quot;: &quot;Changi Airport Terminal 1&quot;
+  },
+  &quot;drop&quot;: {
+    &quot;address&quot;: &quot;Marina Bay Sands&quot;
+  },
+  &quot;add_ons&quot;: [
+    {
+      &quot;add_on_id&quot;: 2,
+      &quot;quantity&quot;: 1
+    },
+    {
+      &quot;add_on_id&quot;: 3,
+      &quot;quantity&quot;: 1
+    },
+    {
+      &quot;add_on_id&quot;: 4,
+      &quot;quantity&quot;: 2
+    }
+  ],
+  &quot;payment_method&quot;: &quot;STRIPE&quot;
+}</code></pre>
+<p>Recommended header: Idempotency-Key: &lt;UUID retained for this attempt&gt;.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;success&quot;: true,
+  &quot;booking_id&quot;: &quot;BK20261005001&quot;,
+  &quot;payment_status&quot;: &quot;PENDING&quot;,
+  &quot;amount&quot;: 145,
+  &quot;currency&quot;: &quot;SGD&quot;,
+  &quot;stripe_checkout_url&quot;: &quot;https://checkout.stripe.com/...&quot;
+}</code></pre>
+<p>Recommended request header: Idempotency-Key with a frontend-generated UUID. The server recalculates the quote, saves a booking and price snapshots, then creates Stripe Checkout. It returns flat payment fields. Database PENDING_PAYMENT is presented as payment_status: PENDING. Amount/currency inputs are rejected. Customer fields are required. A successful HTTP response gives a checkout URL, not proof of payment. Navigate the customer to stripe_checkout_url. New attempts require new keys; retry the same attempt with the same key and details. Do not reuse a key after the customer changes selections. Unavailable support routes return CONTACT_SUPPORT without booking or payment fields.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT or CHECKOUT_NOT_SUPPORTED; 404 NOT_FOUND; 409 IDEMPOTENCY_CONFLICT, BOOKING_NOT_PENDING, CHECKOUT_EXPIRED or QUOTE_UNAVAILABLE; 422 ROUTE_NOT_FOUND; 503 PAYMENT_NOT_CONFIGURED, PAYMENT_UNAVAILABLE, DISTANCE_UNAVAILABLE or DISTANCE_PRICING_UNAVAILABLE.</p>
+<p>Alternate HTTP 200 contact-support response:</p>
+<pre><code>{
+  &quot;success&quot;: true,
+  &quot;quote_status&quot;: &quot;CONTACT_SUPPORT&quot;,
+  &quot;route&quot;: {
+    &quot;pickup&quot;: &quot;Changi Airport Terminal 1&quot;,
+    &quot;drop&quot;: &quot;Marina Bay Sands&quot;,
+    &quot;distance_km&quot;: 38.7
+  },
+  &quot;distance&quot;: {
+    &quot;value&quot;: 38.7,
+    &quot;unit&quot;: &quot;km&quot;
+  },
+  &quot;message&quot;: &quot;This route requires a customized quotation. Please contact our support team via WhatsApp.&quot;,
+  &quot;whatsapp&quot;: {
+    &quot;enabled&quot;: true
+  }
+}</code></pre>
+<h3 id="section-18">Admin catalog</h3>
+<h4 id="section-19">10. Create vehicle type</h4>
+<p><strong>POST /api/vehicle-types</strong></p>
+<p>Access: Admin.</p>
+<p>Request body:</p>
+<pre><code>{
+  &quot;name&quot;: &quot;Executive MPV&quot;,
+  &quot;description&quot;: &quot;Premium carrier&quot;
+}</code></pre>
+<p>Required header: Authorization: Bearer &lt;ADMIN_API_KEY&gt;. For writes, also Content-Type: application/json.</p>
+<p>Example HTTP 201 response:</p>
+<pre><code>{
+  &quot;vehicleType&quot;: {
+    &quot;id&quot;: 4,
+    &quot;name&quot;: &quot;Executive MPV&quot;,
+    &quot;description&quot;: &quot;Premium carrier&quot;
+  }
+}</code></pre>
+<p>name is required (1–120 characters); description is optional (up to 1,000). Type names must be unique.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT; 409 ALREADY_EXISTS.</p>
+<h4 id="section-20">11. Update vehicle type</h4>
+<p><strong>PATCH /api/vehicle-types/2</strong></p>
+<p>Access: Admin.</p>
+<p>Request body:</p>
+<pre><code>{
+  &quot;name&quot;: &quot;Premium MPV&quot;,
+  &quot;description&quot;: &quot;Updated category&quot;
+}</code></pre>
+<p>Required header: Authorization: Bearer &lt;ADMIN_API_KEY&gt;. For writes, also Content-Type: application/json.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;vehicleType&quot;: {
+    &quot;id&quot;: 2,
+    &quot;name&quot;: &quot;Premium MPV&quot;,
+    &quot;description&quot;: &quot;Updated category&quot;
+  }
+}</code></pre>
+<p>Send a nonempty object containing name and/or description. Other fields are rejected.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT; 404 NOT_FOUND; 409 ALREADY_EXISTS.</p>
+<h4 id="section-21">12. Create vehicle and rates</h4>
+<p><strong>POST /api/vehicles</strong></p>
+<p>Access: Admin.</p>
+<p>Request body:</p>
+<pre><code>{
+  &quot;name&quot;: &quot;New Executive MPV&quot;,
+  &quot;description&quot;: &quot;Premium carrier&quot;,
+  &quot;passengerCapacity&quot;: 6,
+  &quot;luggageCapacity&quot;: 6,
+  &quot;currency&quot;: &quot;SGD&quot;,
+  &quot;vehicleTypeId&quot;: 2,
+  &quot;imageUrl&quot;: &quot;https://example.com/images/alphard.jpg&quot;,
+  &quot;status&quot;: &quot;active&quot;,
+  &quot;prices&quot;: {
+    &quot;arrival&quot;: {
+      &quot;amount&quot;: 80
+    },
+    &quot;departure_transfer&quot;: {
+      &quot;amount&quot;: 70
+    },
+    &quot;hourly&quot;: {
+      &quot;amount&quot;: 65,
+      &quot;minimumHours&quot;: 3
+    }
+  }
+}</code></pre>
+<p>Required header: Authorization: Bearer &lt;ADMIN_API_KEY&gt;. For writes, also Content-Type: application/json.</p>
+<p>Example HTTP 201 response:</p>
+<pre><code>{
+  &quot;vehicle&quot;: {
+    &quot;id&quot;: 11,
+    &quot;name&quot;: &quot;New Executive MPV&quot;,
+    &quot;description&quot;: &quot;Premium carrier&quot;,
+    &quot;passengerCapacity&quot;: 6,
+    &quot;currency&quot;: &quot;SGD&quot;,
+    &quot;vehicleTypeId&quot;: 2,
+    &quot;vehicleType&quot;: &quot;MPV&quot;,
+    &quot;imageUrl&quot;: &quot;https://example.com/images/alphard.jpg&quot;,
+    &quot;status&quot;: &quot;active&quot;,
+    &quot;updatedAt&quot;: &quot;2026-10-05T00:00:00.000Z&quot;,
+    &quot;luggageCapacity&quot;: 6,
+    &quot;isActive&quot;: true,
+    &quot;createdAt&quot;: &quot;2026-10-05T00:00:00.000Z&quot;,
+    &quot;prices&quot;: {
+      &quot;arrival&quot;: {
+        &quot;catalogId&quot;: 31,
+        &quot;serviceId&quot;: 1,
+        &quot;amount&quot;: 80,
+        &quot;amountMinor&quot;: 8000,
+        &quot;currency&quot;: &quot;SGD&quot;,
+        &quot;validFrom&quot;: &quot;2026-10-05T00:00:00.000Z&quot;,
+        &quot;validTo&quot;: null,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;isFrom&quot;: false,
+        &quot;unit&quot;: &quot;trip&quot;,
+        &quot;serviceName&quot;: &quot;Arrival&quot;,
+        &quot;minimumHours&quot;: null
+      },
+      &quot;departure_transfer&quot;: {
+        &quot;catalogId&quot;: 32,
+        &quot;serviceId&quot;: 2,
+        &quot;amount&quot;: 70,
+        &quot;amountMinor&quot;: 7000,
+        &quot;currency&quot;: &quot;SGD&quot;,
+        &quot;validFrom&quot;: &quot;2026-10-05T00:00:00.000Z&quot;,
+        &quot;validTo&quot;: null,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;isFrom&quot;: false,
+        &quot;unit&quot;: &quot;trip&quot;,
+        &quot;serviceName&quot;: &quot;Departure Transfer&quot;,
+        &quot;minimumHours&quot;: null
+      },
+      &quot;hourly&quot;: {
+        &quot;catalogId&quot;: 33,
+        &quot;serviceId&quot;: 3,
+        &quot;amount&quot;: 65,
+        &quot;amountMinor&quot;: 6500,
+        &quot;currency&quot;: &quot;SGD&quot;,
+        &quot;validFrom&quot;: &quot;2026-10-05T00:00:00.000Z&quot;,
+        &quot;validTo&quot;: null,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;isFrom&quot;: false,
+        &quot;unit&quot;: &quot;hour&quot;,
+        &quot;serviceName&quot;: &quot;Hourly&quot;,
+        &quot;minimumHours&quot;: 3
+      }
+    }
+  }
+}</code></pre>
+<p>Required: name, currency and prices for every currently active service returned by GET /services. The example assumes only arrival, departure_transfer and hourly are active; add other active service codes when needed. Each rate allows amount, isFrom and minimumHours. New vehicle status defaults active; unspecified capacities become null. Response includes Location: /api/v1/vehicles/&lt;new-id&gt;. Creation returns a full vehicle, not a recommendation card.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT; 404 NOT_FOUND for a missing type; 409 VEHICLE_EXISTS.</p>
+<h4 id="section-22">13. Update vehicle details</h4>
+<p><strong>PATCH /api/vehicles/3</strong></p>
+<p>Access: Admin.</p>
+<p>Request body:</p>
+<pre><code>{
+  &quot;name&quot;: &quot;Toyota Alphard Executive&quot;,
+  &quot;passengerCapacity&quot;: 6,
+  &quot;luggageCapacity&quot;: 5
+}</code></pre>
+<p>Required header: Authorization: Bearer &lt;ADMIN_API_KEY&gt;. For writes, also Content-Type: application/json.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;vehicle&quot;: {
+    &quot;id&quot;: 3,
+    &quot;name&quot;: &quot;Toyota Alphard Executive&quot;,
+    &quot;description&quot;: &quot;Executive MPV&quot;,
+    &quot;passengerCapacity&quot;: 6,
+    &quot;currency&quot;: &quot;SGD&quot;,
+    &quot;vehicleTypeId&quot;: 2,
+    &quot;vehicleType&quot;: &quot;MPV&quot;,
+    &quot;imageUrl&quot;: &quot;https://example.com/images/alphard.jpg&quot;,
+    &quot;status&quot;: &quot;active&quot;,
+    &quot;updatedAt&quot;: &quot;2026-10-05T00:00:00.000Z&quot;,
+    &quot;luggageCapacity&quot;: 5,
+    &quot;isActive&quot;: true,
+    &quot;createdAt&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+    &quot;prices&quot;: {
+      &quot;arrival&quot;: {
+        &quot;catalogId&quot;: 12,
+        &quot;serviceId&quot;: 1,
+        &quot;amount&quot;: 80,
+        &quot;amountMinor&quot;: 8000,
+        &quot;currency&quot;: &quot;SGD&quot;,
+        &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+        &quot;validTo&quot;: null,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;isFrom&quot;: false,
+        &quot;unit&quot;: &quot;trip&quot;,
+        &quot;serviceName&quot;: &quot;Arrival&quot;,
+        &quot;minimumHours&quot;: null
+      },
+      &quot;departure_transfer&quot;: {
+        &quot;catalogId&quot;: 13,
+        &quot;serviceId&quot;: 2,
+        &quot;amount&quot;: 70,
+        &quot;amountMinor&quot;: 7000,
+        &quot;currency&quot;: &quot;SGD&quot;,
+        &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+        &quot;validTo&quot;: null,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;isFrom&quot;: false,
+        &quot;unit&quot;: &quot;trip&quot;,
+        &quot;serviceName&quot;: &quot;Departure Transfer&quot;,
+        &quot;minimumHours&quot;: null
+      },
+      &quot;hourly&quot;: {
+        &quot;catalogId&quot;: 14,
+        &quot;serviceId&quot;: 3,
+        &quot;amount&quot;: 65,
+        &quot;amountMinor&quot;: 6500,
+        &quot;currency&quot;: &quot;SGD&quot;,
+        &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+        &quot;validTo&quot;: null,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;isFrom&quot;: false,
+        &quot;unit&quot;: &quot;hour&quot;,
+        &quot;serviceName&quot;: &quot;Hourly&quot;,
+        &quot;minimumHours&quot;: 3
+      }
+    }
+  }
+}</code></pre>
+<p>Allowed fields: name, description, passengerCapacity, luggageCapacity, status OR isActive, vehicleTypeId, imageUrl. Send only changes in a nonempty object. Nullable capacities/type/image clear the corresponding values. Currency/prices cannot be patched here. description must be a string; empty string clears it. No DELETE endpoint exists; set status: inactive to hide a vehicle from lists and new quotes.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT; 404 NOT_FOUND; 409 ALREADY_EXISTS.</p>
+<h4 id="section-23">14. Set or replace one service rate</h4>
+<p><strong>PUT /api/vehicles/3/prices/arrival</strong></p>
+<p>Access: Admin.</p>
+<p>Request body:</p>
+<pre><code>{
+  &quot;amount&quot;: 95,
+  &quot;currency&quot;: &quot;SGD&quot;,
+  &quot;isFrom&quot;: false,
+  &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+  &quot;validTo&quot;: null,
+  &quot;status&quot;: &quot;active&quot;
+}</code></pre>
+<p>Required header: Authorization: Bearer &lt;ADMIN_API_KEY&gt;. For writes, also Content-Type: application/json.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;vehicle&quot;: {
+    &quot;id&quot;: 3,
+    &quot;name&quot;: &quot;Toyota Alphard / Vellfire&quot;,
+    &quot;description&quot;: &quot;Executive MPV&quot;,
+    &quot;passengerCapacity&quot;: 6,
+    &quot;currency&quot;: &quot;SGD&quot;,
+    &quot;vehicleTypeId&quot;: 2,
+    &quot;vehicleType&quot;: &quot;MPV&quot;,
+    &quot;imageUrl&quot;: &quot;https://example.com/images/alphard.jpg&quot;,
+    &quot;status&quot;: &quot;active&quot;,
+    &quot;updatedAt&quot;: &quot;2026-10-05T00:00:00.000Z&quot;,
+    &quot;luggageCapacity&quot;: 6,
+    &quot;isActive&quot;: true,
+    &quot;createdAt&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+    &quot;prices&quot;: {
+      &quot;arrival&quot;: {
+        &quot;catalogId&quot;: 12,
+        &quot;serviceId&quot;: 1,
+        &quot;amount&quot;: 95,
+        &quot;amountMinor&quot;: 9500,
+        &quot;currency&quot;: &quot;SGD&quot;,
+        &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+        &quot;validTo&quot;: null,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;isFrom&quot;: false,
+        &quot;unit&quot;: &quot;trip&quot;,
+        &quot;serviceName&quot;: &quot;Arrival&quot;,
+        &quot;minimumHours&quot;: null
+      },
+      &quot;departure_transfer&quot;: {
+        &quot;catalogId&quot;: 13,
+        &quot;serviceId&quot;: 2,
+        &quot;amount&quot;: 70,
+        &quot;amountMinor&quot;: 7000,
+        &quot;currency&quot;: &quot;SGD&quot;,
+        &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+        &quot;validTo&quot;: null,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;isFrom&quot;: false,
+        &quot;unit&quot;: &quot;trip&quot;,
+        &quot;serviceName&quot;: &quot;Departure Transfer&quot;,
+        &quot;minimumHours&quot;: null
+      },
+      &quot;hourly&quot;: {
+        &quot;catalogId&quot;: 14,
+        &quot;serviceId&quot;: 3,
+        &quot;amount&quot;: 65,
+        &quot;amountMinor&quot;: 6500,
+        &quot;currency&quot;: &quot;SGD&quot;,
+        &quot;validFrom&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+        &quot;validTo&quot;: null,
+        &quot;status&quot;: &quot;active&quot;,
+        &quot;isFrom&quot;: false,
+        &quot;unit&quot;: &quot;hour&quot;,
+        &quot;serviceName&quot;: &quot;Hourly&quot;,
+        &quot;minimumHours&quot;: 3
+      }
+    }
+  }
+}</code></pre>
+<p>Path uses service code (arrival), not service ID. amount is required. Omitted isFrom becomes false; minimumHours becomes null; validFrom becomes the database current timestamp; validTo becomes null; status becomes active. Omitted currency reuses the existing rate currency or the vehicle’s single visible currency; provide it explicitly for a new rate on a mixed-currency vehicle. Omitted fields can reset existing settings. For hourly prices, minimumHours may be 1–24. Inactive/future/expired prices are omitted from returned prices. Returns the full combined vehicle; catalogId remains unchanged.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT; 404 NOT_FOUND for missing vehicle/service.</p>
+<h4 id="section-24">15. Create service</h4>
+<p><strong>POST /api/services</strong></p>
+<p>Access: Admin.</p>
+<p>Request body:</p>
+<pre><code>{
+  &quot;code&quot;: &quot;city_tour&quot;,
+  &quot;name&quot;: &quot;City Tour&quot;,
+  &quot;unit&quot;: &quot;hour&quot;,
+  &quot;sortOrder&quot;: 4,
+  &quot;status&quot;: &quot;active&quot;
+}</code></pre>
+<p>Required header: Authorization: Bearer &lt;ADMIN_API_KEY&gt;. For writes, also Content-Type: application/json.</p>
+<p>Example HTTP 201 response:</p>
+<pre><code>{
+  &quot;service&quot;: {
+    &quot;id&quot;: 4,
+    &quot;code&quot;: &quot;city_tour&quot;,
+    &quot;name&quot;: &quot;City Tour&quot;,
+    &quot;unit&quot;: &quot;hour&quot;,
+    &quot;status&quot;: &quot;active&quot;,
+    &quot;sortOrder&quot;: 4
+  }
+}</code></pre>
+<p>code, name and unit are required. Default sortOrder is 0 and status is active. Creating a service does not create vehicle rates; use price PUT for each vehicle. Codes and billing units cannot be changed later.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT; 409 ALREADY_EXISTS.</p>
+<h4 id="section-25">16. Update service</h4>
+<p><strong>PATCH /api/services/city_tour</strong></p>
+<p>Access: Admin.</p>
+<p>Request body:</p>
+<pre><code>{
+  &quot;name&quot;: &quot;Private City Tour&quot;,
+  &quot;sortOrder&quot;: 5,
+  &quot;status&quot;: &quot;active&quot;
+}</code></pre>
+<p>Required header: Authorization: Bearer &lt;ADMIN_API_KEY&gt;. For writes, also Content-Type: application/json.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;service&quot;: {
+    &quot;id&quot;: 4,
+    &quot;code&quot;: &quot;city_tour&quot;,
+    &quot;name&quot;: &quot;Private City Tour&quot;,
+    &quot;unit&quot;: &quot;hour&quot;,
+    &quot;status&quot;: &quot;active&quot;,
+    &quot;sortOrder&quot;: 5
+  }
+}</code></pre>
+<p>Nonempty object; name, sortOrder and status only. Path is the service code. Inactive services disappear from public lists and new quotes.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT; 404 NOT_FOUND; 409 ALREADY_EXISTS.</p>
+<h3 id="section-26">Admin extras and pricing</h3>
+<h4 id="section-27">17. Create add-on</h4>
+<p><strong>POST /api/add-ons</strong></p>
+<p>Access: Admin.</p>
+<p>Request body:</p>
+<pre><code>{
+  &quot;code&quot;: &quot;EXTRA_WAIT&quot;,
+  &quot;name&quot;: &quot;Extra waiting&quot;,
+  &quot;description&quot;: &quot;Optional waiting charge&quot;,
+  &quot;pricing_type&quot;: &quot;FIXED&quot;,
+  &quot;price&quot;: 15,
+  &quot;currency&quot;: &quot;SGD&quot;,
+  &quot;status&quot;: &quot;ACTIVE&quot;
+}</code></pre>
+<p>Required header: Authorization: Bearer &lt;ADMIN_API_KEY&gt;. For writes, also Content-Type: application/json.</p>
+<p>Example HTTP 201 response:</p>
+<pre><code>{
+  &quot;success&quot;: true,
+  &quot;add_on&quot;: {
+    &quot;id&quot;: 6,
+    &quot;code&quot;: &quot;EXTRA_WAIT&quot;,
+    &quot;name&quot;: &quot;Extra waiting&quot;,
+    &quot;description&quot;: &quot;Optional waiting charge&quot;,
+    &quot;pricing_type&quot;: &quot;FIXED&quot;,
+    &quot;price&quot;: 15,
+    &quot;currency&quot;: &quot;SGD&quot;,
+    &quot;status&quot;: &quot;ACTIVE&quot;,
+    &quot;created_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;,
+    &quot;updated_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;
+  }
+}</code></pre>
+<p>Required: code, name, pricing_type, price. Defaults: description empty, currency SGD, status ACTIVE. Code is unique and cannot be patched.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT; 409 ALREADY_EXISTS.</p>
+<h4 id="section-28">18. Update add-on</h4>
+<p><strong>PATCH /api/add-ons/3</strong></p>
+<p>Access: Admin.</p>
+<p>Request body:</p>
+<pre><code>{
+  &quot;price&quot;: 25,
+  &quot;status&quot;: &quot;ACTIVE&quot;
+}</code></pre>
+<p>Required header: Authorization: Bearer &lt;ADMIN_API_KEY&gt;. For writes, also Content-Type: application/json.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;success&quot;: true,
+  &quot;add_on&quot;: {
+    &quot;id&quot;: 3,
+    &quot;code&quot;: &quot;BABY_SEAT&quot;,
+    &quot;name&quot;: &quot;Baby Seat&quot;,
+    &quot;description&quot;: &quot;&quot;,
+    &quot;pricing_type&quot;: &quot;FIXED&quot;,
+    &quot;price&quot;: 25,
+    &quot;currency&quot;: &quot;SGD&quot;,
+    &quot;status&quot;: &quot;ACTIVE&quot;,
+    &quot;created_at&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+    &quot;updated_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;
+  }
+}</code></pre>
+<p>Nonempty object. Allowed: name, description, pricing_type, price, currency, status. Deactivate with status: INACTIVE. Existing booking snapshots retain their original names/prices.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT; 404 NOT_FOUND.</p>
+<h4 id="section-29">19. List distance rules</h4>
+<p><strong>GET /api/distance-pricing-rules</strong></p>
+<p>Access: Admin.</p>
+<p>Request body: none.</p>
+<p>Required header: Authorization: Bearer &lt;ADMIN_API_KEY&gt;. For writes, also Content-Type: application/json.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;success&quot;: true,
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: 1,
+      &quot;min_distance_km&quot;: 0,
+      &quot;max_distance_km&quot;: 28,
+      &quot;min_inclusive&quot;: true,
+      &quot;max_inclusive&quot;: false,
+      &quot;surcharge&quot;: 0,
+      &quot;currency&quot;: &quot;SGD&quot;,
+      &quot;is_contact_support&quot;: false,
+      &quot;status&quot;: &quot;ACTIVE&quot;,
+      &quot;created_at&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;
+    },
+    {
+      &quot;id&quot;: 2,
+      &quot;min_distance_km&quot;: 28,
+      &quot;max_distance_km&quot;: 30,
+      &quot;min_inclusive&quot;: true,
+      &quot;max_inclusive&quot;: false,
+      &quot;surcharge&quot;: 5,
+      &quot;currency&quot;: &quot;SGD&quot;,
+      &quot;is_contact_support&quot;: false,
+      &quot;status&quot;: &quot;ACTIVE&quot;,
+      &quot;created_at&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;
+    },
+    {
+      &quot;id&quot;: 3,
+      &quot;min_distance_km&quot;: 30,
+      &quot;max_distance_km&quot;: 32,
+      &quot;min_inclusive&quot;: true,
+      &quot;max_inclusive&quot;: false,
+      &quot;surcharge&quot;: 10,
+      &quot;currency&quot;: &quot;SGD&quot;,
+      &quot;is_contact_support&quot;: false,
+      &quot;status&quot;: &quot;ACTIVE&quot;,
+      &quot;created_at&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;
+    },
+    {
+      &quot;id&quot;: 4,
+      &quot;min_distance_km&quot;: 32,
+      &quot;max_distance_km&quot;: 35,
+      &quot;min_inclusive&quot;: true,
+      &quot;max_inclusive&quot;: true,
+      &quot;surcharge&quot;: 15,
+      &quot;currency&quot;: &quot;SGD&quot;,
+      &quot;is_contact_support&quot;: false,
+      &quot;status&quot;: &quot;ACTIVE&quot;,
+      &quot;created_at&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;
+    },
+    {
+      &quot;id&quot;: 5,
+      &quot;min_distance_km&quot;: 35,
+      &quot;max_distance_km&quot;: null,
+      &quot;min_inclusive&quot;: false,
+      &quot;max_inclusive&quot;: false,
+      &quot;surcharge&quot;: 0,
+      &quot;currency&quot;: &quot;SGD&quot;,
+      &quot;is_contact_support&quot;: true,
+      &quot;status&quot;: &quot;ACTIVE&quot;,
+      &quot;created_at&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;
+    }
+  ]
+}</code></pre>
+<p>Admin token required even though this is a GET. Returns active and inactive rules. Frontend booking UI can use the quoted distance_charge; it does not need admin rule access.</p>
+<h4 id="section-30">20. Create distance rule</h4>
+<p><strong>POST /api/distance-pricing-rules</strong></p>
+<p>Access: Admin.</p>
+<p>Request body:</p>
+<pre><code>{
+  &quot;min_distance_km&quot;: 40,
+  &quot;max_distance_km&quot;: null,
+  &quot;min_inclusive&quot;: false,
+  &quot;max_inclusive&quot;: false,
+  &quot;surcharge&quot;: 0,
+  &quot;currency&quot;: &quot;SGD&quot;,
+  &quot;is_contact_support&quot;: true,
+  &quot;status&quot;: &quot;INACTIVE&quot;
+}</code></pre>
+<p>Required header: Authorization: Bearer &lt;ADMIN_API_KEY&gt;. For writes, also Content-Type: application/json.</p>
+<p>Example HTTP 201 response:</p>
+<pre><code>{
+  &quot;success&quot;: true,
+  &quot;distance_rule&quot;: {
+    &quot;id&quot;: 6,
+    &quot;min_distance_km&quot;: 40,
+    &quot;max_distance_km&quot;: null,
+    &quot;min_inclusive&quot;: false,
+    &quot;max_inclusive&quot;: false,
+    &quot;surcharge&quot;: 0,
+    &quot;currency&quot;: &quot;SGD&quot;,
+    &quot;is_contact_support&quot;: true,
+    &quot;status&quot;: &quot;INACTIVE&quot;,
+    &quot;created_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;,
+    &quot;updated_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;
+  }
+}</code></pre>
+<p>min_distance_km is required. Defaults: max_distance_km null, min_inclusive true, max_inclusive false, surcharge 0, currency SGD, is_contact_support false, status ACTIVE. Example is inactive so it does not overlap the default &gt;35 km rule. Active ranges cannot overlap. A null maximum is unbounded. Rule gaps cause quoting failures instead of a zero-charge fallback.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT; 409 OVERLAPPING_RULES.</p>
+<h4 id="section-31">21. Update distance rule</h4>
+<p><strong>PATCH /api/distance-pricing-rules/2</strong></p>
+<p>Access: Admin.</p>
+<p>Request body:</p>
+<pre><code>{
+  &quot;surcharge&quot;: 7.5
+}</code></pre>
+<p>Required header: Authorization: Bearer &lt;ADMIN_API_KEY&gt;. For writes, also Content-Type: application/json.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;success&quot;: true,
+  &quot;distance_rule&quot;: {
+    &quot;id&quot;: 2,
+    &quot;min_distance_km&quot;: 28,
+    &quot;max_distance_km&quot;: 30,
+    &quot;min_inclusive&quot;: true,
+    &quot;max_inclusive&quot;: false,
+    &quot;surcharge&quot;: 7.5,
+    &quot;currency&quot;: &quot;SGD&quot;,
+    &quot;is_contact_support&quot;: false,
+    &quot;status&quot;: &quot;ACTIVE&quot;,
+    &quot;created_at&quot;: &quot;2026-10-01T00:00:00.000Z&quot;,
+    &quot;updated_at&quot;: &quot;2026-10-05T00:00:00.000Z&quot;
+  }
+}</code></pre>
+<p>Nonempty object. Editable fields are min_distance_km, max_distance_km, min_inclusive, max_inclusive, surcharge, currency, is_contact_support and status. The database checks merged range bounds, overlap and support-rule surcharge. Update one bracket carefully to preserve coverage.</p>
+<p>Endpoint-specific errors: 400 INVALID_INPUT; 404 NOT_FOUND; 409 OVERLAPPING_RULES.</p>
+<h3 id="section-32">Operations and Stripe</h3>
+<h4 id="section-33">22. Process health</h4>
+<p><strong>GET /health</strong></p>
+<p>Access: Public.</p>
+<p>Request body: none.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;status&quot;: &quot;ok&quot;
+}</code></pre>
+<p>Root path, outside /api. Confirms the HTTP process is alive; it does not check database, Google or Stripe configuration.</p>
+<h4 id="section-34">23. Database readiness</h4>
+<p><strong>GET /ready</strong></p>
+<p>Access: Public.</p>
+<p>Request body: none.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;status&quot;: &quot;ready&quot;
+}</code></pre>
+<p>Root path, outside /api. Checks database connectivity. It does not verify Google/Stripe or all migrations.</p>
+<p>Endpoint-specific errors: 503 NOT_READY when the database check fails.</p>
+<h4 id="section-35">24. Stripe payment notification</h4>
+<p><strong>POST /api/payments/stripe/webhook</strong></p>
+<p>Access: Stripe signature.</p>
+<p>Request body:</p>
+<pre><code>{
+  &quot;id&quot;: &quot;evt_example_completed&quot;,
+  &quot;object&quot;: &quot;event&quot;,
+  &quot;type&quot;: &quot;checkout.session.completed&quot;,
+  &quot;data&quot;: {
+    &quot;object&quot;: {
+      &quot;id&quot;: &quot;cs_example&quot;,
+      &quot;object&quot;: &quot;checkout.session&quot;,
+      &quot;mode&quot;: &quot;payment&quot;,
+      &quot;payment_status&quot;: &quot;paid&quot;,
+      &quot;amount_total&quot;: 14500,
+      &quot;currency&quot;: &quot;sgd&quot;,
+      &quot;livemode&quot;: false,
+      &quot;client_reference_id&quot;: &quot;6f75c918-cc55-409a-bb52-95a1739de910&quot;,
+      &quot;metadata&quot;: {
+        &quot;booking_id&quot;: &quot;BK20261005001&quot;,
+        &quot;booking_uuid&quot;: &quot;6f75c918-cc55-409a-bb52-95a1739de910&quot;,
+        &quot;customer_name&quot;: &quot;John Smith&quot;,
+        &quot;customer_phone&quot;: &quot;+6591234567&quot;,
+        &quot;customer_email&quot;: &quot;john@example.com&quot;
+      },
+      &quot;payment_intent&quot;: &quot;pi_example&quot;
+    }
+  }
+}</code></pre>
+<p>Required header: Stripe-Signature: &lt;valid signature from Stripe for the unchanged body&gt;.</p>
+<p>Example HTTP 200 response:</p>
+<pre><code>{
+  &quot;received&quot;: true
+}</code></pre>
+<p>Stripe calls this server endpoint. Required header: Stripe-Signature generated for this exact raw payload and endpoint signing secret. The body example shows fields the handler uses; real Stripe events contain additional fields. Do not call it from React to mark a booking paid. Unsigned Postman requests return 400 INVALID_SIGNATURE. Match stored booking UUID/client reference, public booking number for new sessions, session ID, amount, currency and test/live mode before applying updates. Amount_total is cents (14500 means SGD 145.00).</p>
+<p>Endpoint-specific errors: 400 INVALID_SIGNATURE; 503 PAYMENT_NOT_CONFIGURED; 500 INTERNAL_ERROR for storage/matching failures (logged internally without customer data).</p>
+<h2 id="section-36">5. Quote and checkout behavior</h2>
+<div class="table-wrap"><table><thead><tr><th>Driving distance</th><th>Default additional charge</th></tr></thead><tbody><tr><td>0 to less than 28 km</td><td>SGD 0</td></tr><tr><td>28 to less than 30 km</td><td>SGD 5</td></tr><tr><td>30 to less than 32 km</td><td>SGD 10</td></tr><tr><td>32 to 35 km inclusive</td><td>SGD 15</td></tr><tr><td>Greater than 35 km</td><td>CONTACT_SUPPORT; no amount or checkout URL</td></tr></tbody></table></div>
+<p>Rules are editable in the database, so frontend display should use quote.distance_charge. Exact Google meter values select brackets without rounding. A gap in active rules produces 503 DISTANCE_PRICING_UNAVAILABLE; there is no free-distance fallback. Different currencies across fare, selected add-ons and distance rule are rejected. isFrom starting-price fares can be displayed on catalog cards but cannot produce an exact quote or Stripe checkout.</p>
+<h3 id="section-37">Hourly quote example</h3>
+<p>POST /api/booking/quote with an hourly service (example service_id 3):</p>
+<pre><code>{
+  &quot;vehicle_id&quot;: 3,
+  &quot;service_id&quot;: 3,
+  &quot;pickup&quot;: {
+    &quot;address&quot;: &quot;Changi Airport Terminal 1&quot;
+  },
+  &quot;drop&quot;: {
+    &quot;address&quot;: &quot;Marina Bay Sands&quot;
+  },
+  &quot;add_ons&quot;: [
+    {
+      &quot;add_on_id&quot;: 3,
+      &quot;quantity&quot;: 1
+    }
+  ],
+  &quot;hours&quot;: 3
+}</code></pre>
+<p>Example HTTP 200 response at SGD 65/hour, three hours, 29.4 km and one Baby Seat:</p>
+<pre><code>{
+  &quot;success&quot;: true,
+  &quot;quote_status&quot;: &quot;AVAILABLE&quot;,
+  &quot;quote&quot;: {
+    &quot;vehicle&quot;: {
+      &quot;id&quot;: 3,
+      &quot;name&quot;: &quot;Toyota Alphard / Vellfire&quot;,
+      &quot;price&quot;: 65
+    },
+    &quot;service&quot;: {
+      &quot;id&quot;: 3,
+      &quot;name&quot;: &quot;Hourly&quot;,
+      &quot;unit&quot;: &quot;hour&quot;
+    },
+    &quot;catalog_id&quot;: 14,
+    &quot;add_ons&quot;: [
+      {
+        &quot;id&quot;: 3,
+        &quot;code&quot;: &quot;BABY_SEAT&quot;,
+        &quot;name&quot;: &quot;Baby Seat&quot;,
+        &quot;pricing_type&quot;: &quot;FIXED&quot;,
+        &quot;quantity&quot;: 1,
+        &quot;unit_price&quot;: 20,
+        &quot;amount&quot;: 20
+      }
+    ],
+    &quot;vehicle_amount&quot;: 195,
+    &quot;add_on_amount&quot;: 20,
+    &quot;total_amount&quot;: 220,
+    &quot;currency&quot;: &quot;SGD&quot;,
+    &quot;route&quot;: {
+      &quot;pickup&quot;: &quot;Changi Airport Terminal 1&quot;,
+      &quot;drop&quot;: &quot;Marina Bay Sands&quot;,
+      &quot;distance_km&quot;: 29.4
+    },
+    &quot;distance_charge&quot;: {
+      &quot;rule_id&quot;: 2,
+      &quot;rule&quot;: &quot;[28,30) km&quot;,
+      &quot;amount&quot;: 5
+    },
+    &quot;distance_amount&quot;: 5,
+    &quot;hours&quot;: 3
+  }
+}</code></pre>
+<p>For hourly checkout, add customer and payment_method to that request and retain hours. The same hourly rate/minimum and distance/add-on calculations apply.</p>
+<p>Night travel is a customer-selected add-on; this API has no pickup time or automatic time-window logic. Additional-stop quantities price extras, but no intermediate stop addresses are routed. The distance is pickup-to-drop driving distance only.</p>
+<h3 id="section-38">Checkout retries</h3>
+<p>Each new attempt recalculates prices, then saves an immutable quote snapshot. The same Idempotency-Key and normalized payload reuse that snapshot and Stripe session; reordered add-ons and email case normalization do not create a second attempt. A changed payload with the same key returns 409 IDEMPOTENCY_CONFLICT. On PAYMENT_UNAVAILABLE or a network timeout, retry the same attempt with the same key. If no key was supplied, the generated key is returned in the Idempotency-Key response header; a client-generated retained key is safer for a lost response.</p>
+<p>Checkout sessions are intended to expire after one hour. Saved sessions can be reopened while pending and unexpired. If no session was saved and fewer than 30 minutes remain, or the attempt is expired, the server returns CHECKOUT_EXPIRED. Start a new attempt/key after expiry or intentional input changes. Nonpending bookings return BOOKING_NOT_PENDING.</p>
+<h3 id="section-39">Payment state and webhooks</h3>
+<div class="table-wrap"><table><thead><tr><th>Verified Stripe event</th><th>Stored booking result</th></tr></thead><tbody><tr><td>checkout.session.completed with payment_status paid</td><td>PAID</td></tr><tr><td>checkout.session.completed with payment_status unpaid</td><td>Remains PENDING_PAYMENT</td></tr><tr><td>checkout.session.async_payment_succeeded with payment_status paid</td><td>PAID</td></tr><tr><td>checkout.session.async_payment_failed on pending booking</td><td>PAYMENT_FAILED</td></tr><tr><td>checkout.session.expired on pending booking</td><td>PAYMENT_EXPIRED</td></tr></tbody></table></div>
+<p>Duplicate event IDs are skipped. Distinct success events can each update the row to PAID; the original paid_at is preserved. Failure/expiry events do not downgrade paid bookings. Session and PaymentIntent metadata carry booking_id (public number), booking_uuid (internal UUID), customer_name, customer_phone and customer_email. Browser code must not post a fake event to confirm payment.</p>
+<p>There is currently no public booking/payment status GET API. The frontend cannot poll a booking number or session_id through this API to confirm payment. Do not treat the success redirect alone as verified payment; coordinate an authenticated status endpoint with the backend if the success page needs confirmation. Customer scheduling, availability checks, inventory reservation, refunds, email notifications, booking cancellation and admin user login are not implemented. No DELETE routes are mounted. POST /api/v1/cab-recommendations was removed and returns 404. The duplicate vehicles array and old nested checkout booking/payment response are no longer returned.</p>
+<h2 id="section-40">6. Common error contract</h2>
+<p>Failed responses have this shape; details is optional:</p>
+<pre><code>{
+  &quot;error&quot;: {
+    &quot;code&quot;: &quot;INVALID_INPUT&quot;,
+    &quot;message&quot;: &quot;Check passenger and luggage counts.&quot;,
+    &quot;details&quot;: [
+      &quot;persons must be an integer between 1 and 100.&quot;
+    ]
+  },
+  &quot;requestId&quot;: &quot;c9f165a3-8c54-489b-8ea4-748be3a473fa&quot;
+}</code></pre>
+<p>Do not assume every successful response has success:true, and do not treat every HTTP 200 as a quote or payment URL: branch on quote_status for support responses.</p>
+<div class="table-wrap"><table><thead><tr><th>HTTP</th><th>Code</th><th>Frontend action</th></tr></thead><tbody><tr><td>400</td><td>INVALID_INPUT / INVALID_JSON</td><td>Display field details; correct the request</td></tr><tr><td>400</td><td>CHECKOUT_NOT_SUPPORTED</td><td>Show checkout restriction; backend accepts SGD and defined amount bounds</td></tr><tr><td>400</td><td>INVALID_SIGNATURE</td><td>Stripe webhook integration error; not a browser checkout response</td></tr><tr><td>401</td><td>UNAUTHORIZED</td><td>Admin proxy credential missing/invalid</td></tr><tr><td>404</td><td>NOT_FOUND</td><td>Selection/path no longer valid; refresh catalog</td></tr><tr><td>409</td><td>VEHICLE_EXISTS / ALREADY_EXISTS</td><td>Show duplicate name/code error in admin UI</td></tr><tr><td>409</td><td>OVERLAPPING_RULES</td><td>Admin pricing ranges overlap; adjust bounds</td></tr><tr><td>409</td><td>QUOTE_UNAVAILABLE</td><td>Starting price requires a confirmed/custom fare</td></tr><tr><td>409</td><td>IDEMPOTENCY_CONFLICT</td><td>Different checkout inputs reused a key; create a new attempt</td></tr><tr><td>409</td><td>CHECKOUT_EXPIRED</td><td>Create a new attempt/key</td></tr><tr><td>409</td><td>BOOKING_NOT_PENDING</td><td>Do not reopen this payment attempt</td></tr><tr><td>413</td><td>PAYLOAD_TOO_LARGE</td><td>Reduce request size (10 KB normally; 64 KB for webhook)</td></tr><tr><td>415</td><td>UNSUPPORTED_MEDIA_TYPE</td><td>Send Content-Type application/json; check encoding</td></tr><tr><td>422</td><td>ROUTE_NOT_FOUND</td><td>Ask user to correct pickup/drop addresses</td></tr><tr><td>429</td><td>RATE_LIMITED</td><td>Reduce/debounce requests and retry according to response headers</td></tr><tr><td>500</td><td>INTERNAL_ERROR</td><td>Show a generic failure and preserve requestId for support</td></tr><tr><td>503</td><td>ADMIN_NOT_CONFIGURED / PAYMENT_NOT_CONFIGURED</td><td>Backend deployment configuration required</td></tr><tr><td>503</td><td>DISTANCE_UNAVAILABLE</td><td>Google key/API, provider error or timeout; show route unavailable</td></tr><tr><td>503</td><td>DISTANCE_PRICING_UNAVAILABLE</td><td>Backend distance-rule coverage missing; contact support</td></tr><tr><td>503</td><td>PAYMENT_UNAVAILABLE</td><td>Retry same checkout payload/key; do not create a fresh key automatically</td></tr><tr><td>503</td><td>NOT_READY</td><td>Database unavailable (readiness endpoint)</td></tr></tbody></table></div>
+<p>Public/admin endpoints can also return generic storage failures through this error contract. On checkout storage/network failure after a booking/session might have been created, reuse the retained key for safe recovery.</p>
+<h2 id="section-41">7. Postman handoff</h2>
+<p>Import maxicab-api.postman_collection.json (Postman Collection v2.1). Configure base_url and api_prefix; adjust vehicle_id, service_id, service_code, catalog_id, add-on/type/rule variables from your database. Set admin_api_key only in a private environment for admin calls. idempotency_key defaults to Postman's dynamic {{$guid}} value; replace it with a retained UUID before retrying the same checkout. A dynamically regenerated key does not deduplicate retries. Stripe webhook requests require a real signature; use Stripe's test webhook delivery/CLI rather than executing the unsigned example.</p>
+<p>Saved example responses are illustrative and do not execute external services. Admin folder requests change catalog data; use a development/staging backend. Checkout requests create pending bookings and Stripe sessions when configured. Public GETs are read-only.</p>
+<h2 id="section-42">8. Backend configuration and scope</h2>
+<p>Backend setup requires DATABASE_URL, migrations through 009, GOOGLE_MAPS_API_KEY with Distance Matrix API access, and STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, STRIPE_SUCCESS_URL and STRIPE_CANCEL_URL for checkout. Secrets are never supplied by frontend requests. Stripe redirect URLs are server-configured, not request fields. HTTPS redirects are required in production; localhost HTTP redirects are allowed only outside production.</p>
+<p>This guide reflects the repo implementation on 5 October 2026. Endpoint and validation examples have been checked against route/controller/repository code. Google/Stripe response values shown here are examples; sharing this document does not imply a live payment was tested or processed.</p></main></body></html>

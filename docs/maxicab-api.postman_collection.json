@@ -1,0 +1,1407 @@
+{
+  "info": {
+    "name": "Maxicab — Frontend API handoff",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "24 endpoint contracts, verified against repo routes on 2026-10-05. Example responses are illustrative. See frontend-api-handoff.md. Admin requests mutate catalog; checkout creates pending bookings. Replace dynamic idempotency_key with a retained UUID for retries. Unsigned webhook examples cannot update bookings."
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://127.0.0.1:3000",
+      "type": "string"
+    },
+    {
+      "key": "api_prefix",
+      "value": "/api",
+      "type": "string"
+    },
+    {
+      "key": "vehicle_id",
+      "value": "3",
+      "type": "string"
+    },
+    {
+      "key": "service_id",
+      "value": "1",
+      "type": "string"
+    },
+    {
+      "key": "service_code",
+      "value": "arrival",
+      "type": "string"
+    },
+    {
+      "key": "catalog_id",
+      "value": "12",
+      "type": "string"
+    },
+    {
+      "key": "vehicle_type_id",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "meet_greet_id",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "baby_seat_id",
+      "value": "3",
+      "type": "string"
+    },
+    {
+      "key": "stop_within_id",
+      "value": "4",
+      "type": "string"
+    },
+    {
+      "key": "distance_rule_id",
+      "value": "2",
+      "type": "string"
+    },
+    {
+      "key": "admin_service_code",
+      "value": "city_tour",
+      "type": "string"
+    },
+    {
+      "key": "admin_api_key",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "idempotency_key",
+      "value": "{{$guid}}",
+      "type": "string"
+    },
+    {
+      "key": "stripe_signature",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Public catalog",
+      "item": [
+        {
+          "name": "GET List vehicle cards",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/vehicles",
+            "description": "No request body. Optional query parameters: persons and luggage, supplied together. Without counts, requirements is null and all recommendation flags are false. Only active vehicles are listed. Every card remains in the result after recommendation; an empty catalog returns data: []. No top-level vehicles alias is returned.\n\n400 INVALID_INPUT for unknown, incomplete, repeated or invalid query parameters.\n\nSee frontend-api-handoff.md."
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}{{api_prefix}}/vehicles",
+                "description": "No request body. Optional query parameters: persons and luggage, supplied together. Without counts, requirements is null and all recommendation flags are false. Only active vehicles are listed. Every card remains in the result after recommendation; an empty catalog returns data: []. No top-level vehicles alias is returned.\n\n400 INVALID_INPUT for unknown, incomplete, repeated or invalid query parameters.\n\nSee frontend-api-handoff.md."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"requirements\": null,\n  \"data\": [\n    {\n      \"id\": 3,\n      \"name\": \"Toyota Alphard / Vellfire\",\n      \"description\": \"Executive MPV\",\n      \"passengerCapacity\": 6,\n      \"currency\": \"SGD\",\n      \"vehicleTypeId\": 2,\n      \"vehicleType\": \"MPV\",\n      \"imageUrl\": \"https://example.com/images/alphard.jpg\",\n      \"status\": \"active\",\n      \"updatedAt\": \"2026-10-05T00:00:00.000Z\",\n      \"luggageCapacity\": 6,\n      \"isActive\": true,\n      \"createdAt\": \"2026-10-01T00:00:00.000Z\",\n      \"prices\": {\n        \"arrival\": {\n          \"catalogId\": 12,\n          \"serviceId\": 1,\n          \"amount\": 80,\n          \"amountMinor\": 8000,\n          \"currency\": \"SGD\",\n          \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n          \"validTo\": null,\n          \"status\": \"active\",\n          \"isFrom\": false,\n          \"unit\": \"trip\",\n          \"serviceName\": \"Arrival\",\n          \"minimumHours\": null\n        },\n        \"departure_transfer\": {\n          \"catalogId\": 13,\n          \"serviceId\": 2,\n          \"amount\": 70,\n          \"amountMinor\": 7000,\n          \"currency\": \"SGD\",\n          \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n          \"validTo\": null,\n          \"status\": \"active\",\n          \"isFrom\": false,\n          \"unit\": \"trip\",\n          \"serviceName\": \"Departure Transfer\",\n          \"minimumHours\": null\n        },\n        \"hourly\": {\n          \"catalogId\": 14,\n          \"serviceId\": 3,\n          \"amount\": 65,\n          \"amountMinor\": 6500,\n          \"currency\": \"SGD\",\n          \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n          \"validTo\": null,\n          \"status\": \"active\",\n          \"isFrom\": false,\n          \"unit\": \"hour\",\n          \"serviceName\": \"Hourly\",\n          \"minimumHours\": 3\n        }\n      },\n      \"recommendation\": false\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET Recommend a vehicle",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/vehicles/recommend?persons=5&luggage=4",
+            "description": "Both counts are required: persons integer 1–100; luggage integer 0–100. GET /vehicles?persons=5&luggage=4 produces the same structure. A single best-fitting eligible card gets recommendation: true; all others remain with false. Unknown capacities and unpriced vehicles cannot be recommended. Ranking minimizes total unused seats and luggage capacity, then passenger capacity, luggage capacity and vehicle ID. If no vehicle fits, HTTP 200 still returns all cards with false. recommendation=false does not mean unsuitable.\n\n400 INVALID_INPUT.\n\nSee frontend-api-handoff.md."
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}{{api_prefix}}/vehicles/recommend?persons=5&luggage=4",
+                "description": "Both counts are required: persons integer 1–100; luggage integer 0–100. GET /vehicles?persons=5&luggage=4 produces the same structure. A single best-fitting eligible card gets recommendation: true; all others remain with false. Unknown capacities and unpriced vehicles cannot be recommended. Ranking minimizes total unused seats and luggage capacity, then passenger capacity, luggage capacity and vehicle ID. If no vehicle fits, HTTP 200 still returns all cards with false. recommendation=false does not mean unsuitable.\n\n400 INVALID_INPUT.\n\nSee frontend-api-handoff.md."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"requirements\": {\n    \"persons\": 5,\n    \"luggage\": 4\n  },\n  \"data\": [\n    {\n      \"id\": 3,\n      \"name\": \"Toyota Alphard / Vellfire\",\n      \"description\": \"Executive MPV\",\n      \"passengerCapacity\": 6,\n      \"currency\": \"SGD\",\n      \"vehicleTypeId\": 2,\n      \"vehicleType\": \"MPV\",\n      \"imageUrl\": \"https://example.com/images/alphard.jpg\",\n      \"status\": \"active\",\n      \"updatedAt\": \"2026-10-05T00:00:00.000Z\",\n      \"luggageCapacity\": 6,\n      \"isActive\": true,\n      \"createdAt\": \"2026-10-01T00:00:00.000Z\",\n      \"prices\": {\n        \"arrival\": {\n          \"catalogId\": 12,\n          \"serviceId\": 1,\n          \"amount\": 80,\n          \"amountMinor\": 8000,\n          \"currency\": \"SGD\",\n          \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n          \"validTo\": null,\n          \"status\": \"active\",\n          \"isFrom\": false,\n          \"unit\": \"trip\",\n          \"serviceName\": \"Arrival\",\n          \"minimumHours\": null\n        },\n        \"departure_transfer\": {\n          \"catalogId\": 13,\n          \"serviceId\": 2,\n          \"amount\": 70,\n          \"amountMinor\": 7000,\n          \"currency\": \"SGD\",\n          \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n          \"validTo\": null,\n          \"status\": \"active\",\n          \"isFrom\": false,\n          \"unit\": \"trip\",\n          \"serviceName\": \"Departure Transfer\",\n          \"minimumHours\": null\n        },\n        \"hourly\": {\n          \"catalogId\": 14,\n          \"serviceId\": 3,\n          \"amount\": 65,\n          \"amountMinor\": 6500,\n          \"currency\": \"SGD\",\n          \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n          \"validTo\": null,\n          \"status\": \"active\",\n          \"isFrom\": false,\n          \"unit\": \"hour\",\n          \"serviceName\": \"Hourly\",\n          \"minimumHours\": 3\n        }\n      },\n      \"recommendation\": true\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET Get one vehicle",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/vehicles/{{vehicle_id}}",
+            "description": "Path id is the vehicle ID. The single-record response has no recommendation field. Current implementation can return an inactive vehicle by ID; list and quote endpoints apply active visibility filters.\n\n404 NOT_FOUND for a missing vehicle.\n\nSee frontend-api-handoff.md."
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}{{api_prefix}}/vehicles/{{vehicle_id}}",
+                "description": "Path id is the vehicle ID. The single-record response has no recommendation field. Current implementation can return an inactive vehicle by ID; list and quote endpoints apply active visibility filters.\n\n404 NOT_FOUND for a missing vehicle.\n\nSee frontend-api-handoff.md."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"vehicle\": {\n    \"id\": 3,\n    \"name\": \"Toyota Alphard / Vellfire\",\n    \"description\": \"Executive MPV\",\n    \"passengerCapacity\": 6,\n    \"currency\": \"SGD\",\n    \"vehicleTypeId\": 2,\n    \"vehicleType\": \"MPV\",\n    \"imageUrl\": \"https://example.com/images/alphard.jpg\",\n    \"status\": \"active\",\n    \"updatedAt\": \"2026-10-05T00:00:00.000Z\",\n    \"luggageCapacity\": 6,\n    \"isActive\": true,\n    \"createdAt\": \"2026-10-01T00:00:00.000Z\",\n    \"prices\": {\n      \"arrival\": {\n        \"catalogId\": 12,\n        \"serviceId\": 1,\n        \"amount\": 80,\n        \"amountMinor\": 8000,\n        \"currency\": \"SGD\",\n        \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n        \"validTo\": null,\n        \"status\": \"active\",\n        \"isFrom\": false,\n        \"unit\": \"trip\",\n        \"serviceName\": \"Arrival\",\n        \"minimumHours\": null\n      },\n      \"departure_transfer\": {\n        \"catalogId\": 13,\n        \"serviceId\": 2,\n        \"amount\": 70,\n        \"amountMinor\": 7000,\n        \"currency\": \"SGD\",\n        \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n        \"validTo\": null,\n        \"status\": \"active\",\n        \"isFrom\": false,\n        \"unit\": \"trip\",\n        \"serviceName\": \"Departure Transfer\",\n        \"minimumHours\": null\n      },\n      \"hourly\": {\n        \"catalogId\": 14,\n        \"serviceId\": 3,\n        \"amount\": 65,\n        \"amountMinor\": 6500,\n        \"currency\": \"SGD\",\n        \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n        \"validTo\": null,\n        \"status\": \"active\",\n        \"isFrom\": false,\n        \"unit\": \"hour\",\n        \"serviceName\": \"Hourly\",\n        \"minimumHours\": 3\n      }\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET List active services",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/services",
+            "description": "No body. Read service IDs and codes dynamically. Services are sorted by sortOrder then code. A service exists independently of whether a selected vehicle has a configured price; offer only prices present on that vehicle.\n\n\n\nSee frontend-api-handoff.md."
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}{{api_prefix}}/services",
+                "description": "No body. Read service IDs and codes dynamically. Services are sorted by sortOrder then code. A service exists independently of whether a selected vehicle has a configured price; offer only prices present on that vehicle.\n\n\n\nSee frontend-api-handoff.md."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"services\": [\n    {\n      \"id\": 1,\n      \"code\": \"arrival\",\n      \"name\": \"Arrival\",\n      \"unit\": \"trip\",\n      \"status\": \"active\",\n      \"sortOrder\": 0\n    },\n    {\n      \"id\": 2,\n      \"code\": \"departure_transfer\",\n      \"name\": \"Departure Transfer\",\n      \"unit\": \"trip\",\n      \"status\": \"active\",\n      \"sortOrder\": 1\n    },\n    {\n      \"id\": 3,\n      \"code\": \"hourly\",\n      \"name\": \"Hourly\",\n      \"unit\": \"hour\",\n      \"status\": \"active\",\n      \"sortOrder\": 2\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET List vehicle types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/vehicle-types",
+            "description": "No body. Types have id, name and description.\n\n\n\nSee frontend-api-handoff.md."
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}{{api_prefix}}/vehicle-types",
+                "description": "No body. Types have id, name and description.\n\n\n\nSee frontend-api-handoff.md."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"vehicleTypes\": [\n    {\n      \"id\": 2,\n      \"name\": \"MPV\",\n      \"description\": \"Multi-purpose vehicle\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET Resolve a vehicle/service price",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/catalog/{{catalog_id}}",
+            "description": "Path id is catalogId, not vehicle ID. Resolves an active vehicle/service price valid now. The ID survives rate edits and does not lock a quote. Quote and checkout currently take vehicle_id plus service_id, not catalogId.\n\n404 NOT_FOUND for missing/ineligible catalog entries.\n\nSee frontend-api-handoff.md."
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}{{api_prefix}}/catalog/{{catalog_id}}",
+                "description": "Path id is catalogId, not vehicle ID. Resolves an active vehicle/service price valid now. The ID survives rate edits and does not lock a quote. Quote and checkout currently take vehicle_id plus service_id, not catalogId.\n\n404 NOT_FOUND for missing/ineligible catalog entries.\n\nSee frontend-api-handoff.md."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"catalog\": {\n    \"catalogId\": 12,\n    \"vehicleId\": 3,\n    \"vehicleName\": \"Toyota Alphard / Vellfire\",\n    \"currency\": \"SGD\",\n    \"service\": \"arrival\",\n    \"price\": {\n      \"catalogId\": 12,\n      \"serviceId\": 1,\n      \"amount\": 80,\n      \"amountMinor\": 8000,\n      \"currency\": \"SGD\",\n      \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n      \"validTo\": null,\n      \"status\": \"active\",\n      \"isFrom\": false,\n      \"unit\": \"trip\",\n      \"serviceName\": \"Arrival\",\n      \"minimumHours\": null\n    }\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Public booking flow",
+      "item": [
+        {
+          "name": "GET List active add-ons",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}{{api_prefix}}/add-ons",
+            "description": "No body. Prices are numeric major currency units. IDs and rates come from the API. FIXED selections require quantity 1; PER_STOP options accept quantities. Status values here are uppercase. Night travel is manually selected; no pickup timestamp or automatic night detection is implemented. Meet & Greet is not automatically restricted to an arrival service.\n\n\n\nSee frontend-api-handoff.md."
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}{{api_prefix}}/add-ons",
+                "description": "No body. Prices are numeric major currency units. IDs and rates come from the API. FIXED selections require quantity 1; PER_STOP options accept quantities. Status values here are uppercase. Night travel is manually selected; no pickup timestamp or automatic night detection is implemented. Meet & Greet is not automatically restricted to an arrival service.\n\n\n\nSee frontend-api-handoff.md."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": 1,\n      \"code\": \"NIGHT_TRAVEL\",\n      \"name\": \"Travelling between 23:30–06:30\",\n      \"description\": \"\",\n      \"pricing_type\": \"FIXED\",\n      \"price\": 10,\n      \"currency\": \"SGD\",\n      \"status\": \"ACTIVE\",\n      \"created_at\": \"2026-10-01T00:00:00.000Z\",\n      \"updated_at\": \"2026-10-05T00:00:00.000Z\"\n    },\n    {\n      \"id\": 2,\n      \"code\": \"MEET_GREET\",\n      \"name\": \"Arrival Meet & Greet\",\n      \"description\": \"\",\n      \"pricing_type\": \"FIXED\",\n      \"price\": 20,\n      \"currency\": \"SGD\",\n      \"status\": \"ACTIVE\",\n      \"created_at\": \"2026-10-01T00:00:00.000Z\",\n      \"updated_at\": \"2026-10-05T00:00:00.000Z\"\n    },\n    {\n      \"id\": 3,\n      \"code\": \"BABY_SEAT\",\n      \"name\": \"Baby Seat\",\n      \"description\": \"\",\n      \"pricing_type\": \"FIXED\",\n      \"price\": 20,\n      \"currency\": \"SGD\",\n      \"status\": \"ACTIVE\",\n      \"created_at\": \"2026-10-01T00:00:00.000Z\",\n      \"updated_at\": \"2026-10-05T00:00:00.000Z\"\n    },\n    {\n      \"id\": 4,\n      \"code\": \"STOP_WITHIN_2KM\",\n      \"name\": \"Additional Stop within 2 km\",\n      \"description\": \"\",\n      \"pricing_type\": \"PER_STOP\",\n      \"price\": 10,\n      \"currency\": \"SGD\",\n      \"status\": \"ACTIVE\",\n      \"created_at\": \"2026-10-01T00:00:00.000Z\",\n      \"updated_at\": \"2026-10-05T00:00:00.000Z\"\n    },\n    {\n      \"id\": 5,\n      \"code\": \"STOP_OVER_2KM\",\n      \"name\": \"Additional Stop more than 2 km\",\n      \"description\": \"\",\n      \"pricing_type\": \"PER_STOP\",\n      \"price\": 20,\n      \"currency\": \"SGD\",\n      \"status\": \"ACTIVE\",\n      \"created_at\": \"2026-10-01T00:00:00.000Z\",\n      \"updated_at\": \"2026-10-05T00:00:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST Calculate a quotation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/booking/quote",
+            "description": "Pickup and drop addresses are required. Google Distance Matrix supplies driving meters; the backend selects a database distance bracket and adds vehicle fare + distance surcharge + add-ons. The response keeps the quote wrapper. Send add_ons: [] for no extras. For an hourly service, also send hours: 3 (or another integer 1–24 meeting minimumHours); the response includes quote.hours and vehicle_amount is hourly rate × hours. Trip services reject hours. Never send prices, currency, client distance or totals. The 29.4 km route is illustrative, not a guaranteed Google result. Quotes do not save a booking or reserve inventory.\n\n400 INVALID_INPUT; 404 NOT_FOUND for inactive/missing selections; 409 QUOTE_UNAVAILABLE for isFrom fares; 422 ROUTE_NOT_FOUND; 503 DISTANCE_UNAVAILABLE or DISTANCE_PRICING_UNAVAILABLE.\n\nSee frontend-api-handoff.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vehicle_id\": {{vehicle_id}},\n  \"service_id\": {{service_id}},\n  \"pickup\": {\n    \"address\": \"Changi Airport Terminal 1\"\n  },\n  \"drop\": {\n    \"address\": \"Marina Bay Sands\"\n  },\n  \"add_ons\": [\n    {\n      \"add_on_id\": {{meet_greet_id}},\n      \"quantity\": 1\n    },\n    {\n      \"add_on_id\": {{baby_seat_id}},\n      \"quantity\": 1\n    },\n    {\n      \"add_on_id\": {{stop_within_id}},\n      \"quantity\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/booking/quote",
+                "description": "Pickup and drop addresses are required. Google Distance Matrix supplies driving meters; the backend selects a database distance bracket and adds vehicle fare + distance surcharge + add-ons. The response keeps the quote wrapper. Send add_ons: [] for no extras. For an hourly service, also send hours: 3 (or another integer 1–24 meeting minimumHours); the response includes quote.hours and vehicle_amount is hourly rate × hours. Trip services reject hours. Never send prices, currency, client distance or totals. The 29.4 km route is illustrative, not a guaranteed Google result. Quotes do not save a booking or reserve inventory.\n\n400 INVALID_INPUT; 404 NOT_FOUND for inactive/missing selections; 409 QUOTE_UNAVAILABLE for isFrom fares; 422 ROUTE_NOT_FOUND; 503 DISTANCE_UNAVAILABLE or DISTANCE_PRICING_UNAVAILABLE.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vehicle_id\": {{vehicle_id}},\n  \"service_id\": {{service_id}},\n  \"pickup\": {\n    \"address\": \"Changi Airport Terminal 1\"\n  },\n  \"drop\": {\n    \"address\": \"Marina Bay Sands\"\n  },\n  \"add_ons\": [\n    {\n      \"add_on_id\": {{meet_greet_id}},\n      \"quantity\": 1\n    },\n    {\n      \"add_on_id\": {{baby_seat_id}},\n      \"quantity\": 1\n    },\n    {\n      \"add_on_id\": {{stop_within_id}},\n      \"quantity\": 2\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"quote_status\": \"AVAILABLE\",\n  \"quote\": {\n    \"vehicle\": {\n      \"id\": 3,\n      \"name\": \"Toyota Alphard / Vellfire\",\n      \"price\": 80\n    },\n    \"service\": {\n      \"id\": 1,\n      \"name\": \"Arrival\",\n      \"unit\": \"trip\"\n    },\n    \"catalog_id\": 12,\n    \"add_ons\": [\n      {\n        \"id\": 2,\n        \"code\": \"MEET_GREET\",\n        \"name\": \"Arrival Meet & Greet\",\n        \"pricing_type\": \"FIXED\",\n        \"quantity\": 1,\n        \"unit_price\": 20,\n        \"amount\": 20\n      },\n      {\n        \"id\": 3,\n        \"code\": \"BABY_SEAT\",\n        \"name\": \"Baby Seat\",\n        \"pricing_type\": \"FIXED\",\n        \"quantity\": 1,\n        \"unit_price\": 20,\n        \"amount\": 20\n      },\n      {\n        \"id\": 4,\n        \"code\": \"STOP_WITHIN_2KM\",\n        \"name\": \"Additional Stop within 2 km\",\n        \"pricing_type\": \"PER_STOP\",\n        \"quantity\": 2,\n        \"unit_price\": 10,\n        \"amount\": 20\n      }\n    ],\n    \"vehicle_amount\": 80,\n    \"add_on_amount\": 60,\n    \"total_amount\": 145,\n    \"currency\": \"SGD\",\n    \"route\": {\n      \"pickup\": \"Changi Airport Terminal 1\",\n      \"drop\": \"Marina Bay Sands\",\n      \"distance_km\": 29.4\n    },\n    \"distance_charge\": {\n      \"rule_id\": 2,\n      \"rule\": \"[28,30) km\",\n      \"amount\": 5\n    },\n    \"distance_amount\": 5\n  }\n}"
+            },
+            {
+              "name": "Example CONTACT_SUPPORT response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/booking/quote",
+                "description": "Pickup and drop addresses are required. Google Distance Matrix supplies driving meters; the backend selects a database distance bracket and adds vehicle fare + distance surcharge + add-ons. The response keeps the quote wrapper. Send add_ons: [] for no extras. For an hourly service, also send hours: 3 (or another integer 1–24 meeting minimumHours); the response includes quote.hours and vehicle_amount is hourly rate × hours. Trip services reject hours. Never send prices, currency, client distance or totals. The 29.4 km route is illustrative, not a guaranteed Google result. Quotes do not save a booking or reserve inventory.\n\n400 INVALID_INPUT; 404 NOT_FOUND for inactive/missing selections; 409 QUOTE_UNAVAILABLE for isFrom fares; 422 ROUTE_NOT_FOUND; 503 DISTANCE_UNAVAILABLE or DISTANCE_PRICING_UNAVAILABLE.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"vehicle_id\": {{vehicle_id}},\n  \"service_id\": {{service_id}},\n  \"pickup\": {\n    \"address\": \"Changi Airport Terminal 1\"\n  },\n  \"drop\": {\n    \"address\": \"Marina Bay Sands\"\n  },\n  \"add_ons\": [\n    {\n      \"add_on_id\": {{meet_greet_id}},\n      \"quantity\": 1\n    },\n    {\n      \"add_on_id\": {{baby_seat_id}},\n      \"quantity\": 1\n    },\n    {\n      \"add_on_id\": {{stop_within_id}},\n      \"quantity\": 2\n    }\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"quote_status\": \"CONTACT_SUPPORT\",\n  \"route\": {\n    \"pickup\": \"Changi Airport Terminal 1\",\n    \"drop\": \"Marina Bay Sands\",\n    \"distance_km\": 38.7\n  },\n  \"distance\": {\n    \"value\": 38.7,\n    \"unit\": \"km\"\n  },\n  \"message\": \"This route requires a customized quotation. Please contact our support team via WhatsApp.\",\n  \"whatsapp\": {\n    \"enabled\": true\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST Create booking and Stripe checkout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "{{idempotency_key}}"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/bookings/checkout",
+            "description": "Recommended request header: Idempotency-Key with a frontend-generated UUID. The server recalculates the quote, saves a booking and price snapshots, then creates Stripe Checkout. It returns flat payment fields. Database PENDING_PAYMENT is presented as payment_status: PENDING. Amount/currency inputs are rejected. Customer fields are required. A successful HTTP response gives a checkout URL, not proof of payment. Navigate the customer to stripe_checkout_url. New attempts require new keys; retry the same attempt with the same key and details. Do not reuse a key after the customer changes selections. Unavailable support routes return CONTACT_SUPPORT without booking or payment fields.\n\n400 INVALID_INPUT or CHECKOUT_NOT_SUPPORTED; 404 NOT_FOUND; 409 IDEMPOTENCY_CONFLICT, BOOKING_NOT_PENDING, CHECKOUT_EXPIRED or QUOTE_UNAVAILABLE; 422 ROUTE_NOT_FOUND; 503 PAYMENT_NOT_CONFIGURED, PAYMENT_UNAVAILABLE, DISTANCE_UNAVAILABLE or DISTANCE_PRICING_UNAVAILABLE.\n\nSee frontend-api-handoff.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": {\n    \"name\": \"John Smith\",\n    \"email\": \"john@example.com\",\n    \"phone\": \"+6591234567\"\n  },\n  \"vehicle_id\": {{vehicle_id}},\n  \"service_id\": {{service_id}},\n  \"pickup\": {\n    \"address\": \"Changi Airport Terminal 1\"\n  },\n  \"drop\": {\n    \"address\": \"Marina Bay Sands\"\n  },\n  \"add_ons\": [\n    {\n      \"add_on_id\": {{meet_greet_id}},\n      \"quantity\": 1\n    },\n    {\n      \"add_on_id\": {{baby_seat_id}},\n      \"quantity\": 1\n    },\n    {\n      \"add_on_id\": {{stop_within_id}},\n      \"quantity\": 2\n    }\n  ],\n  \"payment_method\": \"STRIPE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Idempotency-Key",
+                    "value": "{{idempotency_key}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/bookings/checkout",
+                "description": "Recommended request header: Idempotency-Key with a frontend-generated UUID. The server recalculates the quote, saves a booking and price snapshots, then creates Stripe Checkout. It returns flat payment fields. Database PENDING_PAYMENT is presented as payment_status: PENDING. Amount/currency inputs are rejected. Customer fields are required. A successful HTTP response gives a checkout URL, not proof of payment. Navigate the customer to stripe_checkout_url. New attempts require new keys; retry the same attempt with the same key and details. Do not reuse a key after the customer changes selections. Unavailable support routes return CONTACT_SUPPORT without booking or payment fields.\n\n400 INVALID_INPUT or CHECKOUT_NOT_SUPPORTED; 404 NOT_FOUND; 409 IDEMPOTENCY_CONFLICT, BOOKING_NOT_PENDING, CHECKOUT_EXPIRED or QUOTE_UNAVAILABLE; 422 ROUTE_NOT_FOUND; 503 PAYMENT_NOT_CONFIGURED, PAYMENT_UNAVAILABLE, DISTANCE_UNAVAILABLE or DISTANCE_PRICING_UNAVAILABLE.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"customer\": {\n    \"name\": \"John Smith\",\n    \"email\": \"john@example.com\",\n    \"phone\": \"+6591234567\"\n  },\n  \"vehicle_id\": {{vehicle_id}},\n  \"service_id\": {{service_id}},\n  \"pickup\": {\n    \"address\": \"Changi Airport Terminal 1\"\n  },\n  \"drop\": {\n    \"address\": \"Marina Bay Sands\"\n  },\n  \"add_ons\": [\n    {\n      \"add_on_id\": {{meet_greet_id}},\n      \"quantity\": 1\n    },\n    {\n      \"add_on_id\": {{baby_seat_id}},\n      \"quantity\": 1\n    },\n    {\n      \"add_on_id\": {{stop_within_id}},\n      \"quantity\": 2\n    }\n  ],\n  \"payment_method\": \"STRIPE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"booking_id\": \"BK20261005001\",\n  \"payment_status\": \"PENDING\",\n  \"amount\": 145,\n  \"currency\": \"SGD\",\n  \"stripe_checkout_url\": \"https://checkout.stripe.com/...\"\n}"
+            },
+            {
+              "name": "Example CONTACT_SUPPORT response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Idempotency-Key",
+                    "value": "{{idempotency_key}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/bookings/checkout",
+                "description": "Recommended request header: Idempotency-Key with a frontend-generated UUID. The server recalculates the quote, saves a booking and price snapshots, then creates Stripe Checkout. It returns flat payment fields. Database PENDING_PAYMENT is presented as payment_status: PENDING. Amount/currency inputs are rejected. Customer fields are required. A successful HTTP response gives a checkout URL, not proof of payment. Navigate the customer to stripe_checkout_url. New attempts require new keys; retry the same attempt with the same key and details. Do not reuse a key after the customer changes selections. Unavailable support routes return CONTACT_SUPPORT without booking or payment fields.\n\n400 INVALID_INPUT or CHECKOUT_NOT_SUPPORTED; 404 NOT_FOUND; 409 IDEMPOTENCY_CONFLICT, BOOKING_NOT_PENDING, CHECKOUT_EXPIRED or QUOTE_UNAVAILABLE; 422 ROUTE_NOT_FOUND; 503 PAYMENT_NOT_CONFIGURED, PAYMENT_UNAVAILABLE, DISTANCE_UNAVAILABLE or DISTANCE_PRICING_UNAVAILABLE.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"customer\": {\n    \"name\": \"John Smith\",\n    \"email\": \"john@example.com\",\n    \"phone\": \"+6591234567\"\n  },\n  \"vehicle_id\": {{vehicle_id}},\n  \"service_id\": {{service_id}},\n  \"pickup\": {\n    \"address\": \"Changi Airport Terminal 1\"\n  },\n  \"drop\": {\n    \"address\": \"Marina Bay Sands\"\n  },\n  \"add_ons\": [\n    {\n      \"add_on_id\": {{meet_greet_id}},\n      \"quantity\": 1\n    },\n    {\n      \"add_on_id\": {{baby_seat_id}},\n      \"quantity\": 1\n    },\n    {\n      \"add_on_id\": {{stop_within_id}},\n      \"quantity\": 2\n    }\n  ],\n  \"payment_method\": \"STRIPE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"quote_status\": \"CONTACT_SUPPORT\",\n  \"route\": {\n    \"pickup\": \"Changi Airport Terminal 1\",\n    \"drop\": \"Marina Bay Sands\",\n    \"distance_km\": 38.7\n  },\n  \"distance\": {\n    \"value\": 38.7,\n    \"unit\": \"km\"\n  },\n  \"message\": \"This route requires a customized quotation. Please contact our support team via WhatsApp.\",\n  \"whatsapp\": {\n    \"enabled\": true\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin catalog",
+      "item": [
+        {
+          "name": "POST Create vehicle type",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_api_key}}"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/vehicle-types",
+            "description": "name is required (1–120 characters); description is optional (up to 1,000). Type names must be unique.\n\n400 INVALID_INPUT; 409 ALREADY_EXISTS.\n\nSee frontend-api-handoff.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Executive MPV\",\n  \"description\": \"Premium carrier\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Example 201 response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_api_key}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/vehicle-types",
+                "description": "name is required (1–120 characters); description is optional (up to 1,000). Type names must be unique.\n\n400 INVALID_INPUT; 409 ALREADY_EXISTS.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Executive MPV\",\n  \"description\": \"Premium carrier\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"vehicleType\": {\n    \"id\": 4,\n    \"name\": \"Executive MPV\",\n    \"description\": \"Premium carrier\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "PATCH Update vehicle type",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_api_key}}"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/vehicle-types/{{vehicle_type_id}}",
+            "description": "Send a nonempty object containing name and/or description. Other fields are rejected.\n\n400 INVALID_INPUT; 404 NOT_FOUND; 409 ALREADY_EXISTS.\n\nSee frontend-api-handoff.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Premium MPV\",\n  \"description\": \"Updated category\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_api_key}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/vehicle-types/{{vehicle_type_id}}",
+                "description": "Send a nonempty object containing name and/or description. Other fields are rejected.\n\n400 INVALID_INPUT; 404 NOT_FOUND; 409 ALREADY_EXISTS.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Premium MPV\",\n  \"description\": \"Updated category\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"vehicleType\": {\n    \"id\": 2,\n    \"name\": \"Premium MPV\",\n    \"description\": \"Updated category\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST Create vehicle and rates",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_api_key}}"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/vehicles",
+            "description": "Required: name, currency and prices for every currently active service returned by GET /services. The example assumes only arrival, departure_transfer and hourly are active; add other active service codes when needed. Each rate allows amount, isFrom and minimumHours. New vehicle status defaults active; unspecified capacities become null. Response includes Location: /api/v1/vehicles/<new-id>. Creation returns a full vehicle, not a recommendation card.\n\n400 INVALID_INPUT; 404 NOT_FOUND for a missing type; 409 VEHICLE_EXISTS.\n\nSee frontend-api-handoff.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Executive MPV\",\n  \"description\": \"Premium carrier\",\n  \"passengerCapacity\": 6,\n  \"luggageCapacity\": 6,\n  \"currency\": \"SGD\",\n  \"vehicleTypeId\": {{vehicle_type_id}},\n  \"imageUrl\": \"https://example.com/images/alphard.jpg\",\n  \"status\": \"active\",\n  \"prices\": {\n    \"arrival\": {\n      \"amount\": 80\n    },\n    \"departure_transfer\": {\n      \"amount\": 70\n    },\n    \"hourly\": {\n      \"amount\": 65,\n      \"minimumHours\": 3\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Example 201 response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_api_key}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/vehicles",
+                "description": "Required: name, currency and prices for every currently active service returned by GET /services. The example assumes only arrival, departure_transfer and hourly are active; add other active service codes when needed. Each rate allows amount, isFrom and minimumHours. New vehicle status defaults active; unspecified capacities become null. Response includes Location: /api/v1/vehicles/<new-id>. Creation returns a full vehicle, not a recommendation card.\n\n400 INVALID_INPUT; 404 NOT_FOUND for a missing type; 409 VEHICLE_EXISTS.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"New Executive MPV\",\n  \"description\": \"Premium carrier\",\n  \"passengerCapacity\": 6,\n  \"luggageCapacity\": 6,\n  \"currency\": \"SGD\",\n  \"vehicleTypeId\": {{vehicle_type_id}},\n  \"imageUrl\": \"https://example.com/images/alphard.jpg\",\n  \"status\": \"active\",\n  \"prices\": {\n    \"arrival\": {\n      \"amount\": 80\n    },\n    \"departure_transfer\": {\n      \"amount\": 70\n    },\n    \"hourly\": {\n      \"amount\": 65,\n      \"minimumHours\": 3\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"vehicle\": {\n    \"id\": 11,\n    \"name\": \"New Executive MPV\",\n    \"description\": \"Premium carrier\",\n    \"passengerCapacity\": 6,\n    \"currency\": \"SGD\",\n    \"vehicleTypeId\": 2,\n    \"vehicleType\": \"MPV\",\n    \"imageUrl\": \"https://example.com/images/alphard.jpg\",\n    \"status\": \"active\",\n    \"updatedAt\": \"2026-10-05T00:00:00.000Z\",\n    \"luggageCapacity\": 6,\n    \"isActive\": true,\n    \"createdAt\": \"2026-10-05T00:00:00.000Z\",\n    \"prices\": {\n      \"arrival\": {\n        \"catalogId\": 31,\n        \"serviceId\": 1,\n        \"amount\": 80,\n        \"amountMinor\": 8000,\n        \"currency\": \"SGD\",\n        \"validFrom\": \"2026-10-05T00:00:00.000Z\",\n        \"validTo\": null,\n        \"status\": \"active\",\n        \"isFrom\": false,\n        \"unit\": \"trip\",\n        \"serviceName\": \"Arrival\",\n        \"minimumHours\": null\n      },\n      \"departure_transfer\": {\n        \"catalogId\": 32,\n        \"serviceId\": 2,\n        \"amount\": 70,\n        \"amountMinor\": 7000,\n        \"currency\": \"SGD\",\n        \"validFrom\": \"2026-10-05T00:00:00.000Z\",\n        \"validTo\": null,\n        \"status\": \"active\",\n        \"isFrom\": false,\n        \"unit\": \"trip\",\n        \"serviceName\": \"Departure Transfer\",\n        \"minimumHours\": null\n      },\n      \"hourly\": {\n        \"catalogId\": 33,\n        \"serviceId\": 3,\n        \"amount\": 65,\n        \"amountMinor\": 6500,\n        \"currency\": \"SGD\",\n        \"validFrom\": \"2026-10-05T00:00:00.000Z\",\n        \"validTo\": null,\n        \"status\": \"active\",\n        \"isFrom\": false,\n        \"unit\": \"hour\",\n        \"serviceName\": \"Hourly\",\n        \"minimumHours\": 3\n      }\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "PATCH Update vehicle details",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_api_key}}"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/vehicles/{{vehicle_id}}",
+            "description": "Allowed fields: name, description, passengerCapacity, luggageCapacity, status OR isActive, vehicleTypeId, imageUrl. Send only changes in a nonempty object. Nullable capacities/type/image clear the corresponding values. Currency/prices cannot be patched here. description must be a string; empty string clears it. No DELETE endpoint exists; set status: inactive to hide a vehicle from lists and new quotes.\n\n400 INVALID_INPUT; 404 NOT_FOUND; 409 ALREADY_EXISTS.\n\nSee frontend-api-handoff.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Toyota Alphard Executive\",\n  \"passengerCapacity\": 6,\n  \"luggageCapacity\": 5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_api_key}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/vehicles/{{vehicle_id}}",
+                "description": "Allowed fields: name, description, passengerCapacity, luggageCapacity, status OR isActive, vehicleTypeId, imageUrl. Send only changes in a nonempty object. Nullable capacities/type/image clear the corresponding values. Currency/prices cannot be patched here. description must be a string; empty string clears it. No DELETE endpoint exists; set status: inactive to hide a vehicle from lists and new quotes.\n\n400 INVALID_INPUT; 404 NOT_FOUND; 409 ALREADY_EXISTS.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Toyota Alphard Executive\",\n  \"passengerCapacity\": 6,\n  \"luggageCapacity\": 5\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"vehicle\": {\n    \"id\": 3,\n    \"name\": \"Toyota Alphard Executive\",\n    \"description\": \"Executive MPV\",\n    \"passengerCapacity\": 6,\n    \"currency\": \"SGD\",\n    \"vehicleTypeId\": 2,\n    \"vehicleType\": \"MPV\",\n    \"imageUrl\": \"https://example.com/images/alphard.jpg\",\n    \"status\": \"active\",\n    \"updatedAt\": \"2026-10-05T00:00:00.000Z\",\n    \"luggageCapacity\": 5,\n    \"isActive\": true,\n    \"createdAt\": \"2026-10-01T00:00:00.000Z\",\n    \"prices\": {\n      \"arrival\": {\n        \"catalogId\": 12,\n        \"serviceId\": 1,\n        \"amount\": 80,\n        \"amountMinor\": 8000,\n        \"currency\": \"SGD\",\n        \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n        \"validTo\": null,\n        \"status\": \"active\",\n        \"isFrom\": false,\n        \"unit\": \"trip\",\n        \"serviceName\": \"Arrival\",\n        \"minimumHours\": null\n      },\n      \"departure_transfer\": {\n        \"catalogId\": 13,\n        \"serviceId\": 2,\n        \"amount\": 70,\n        \"amountMinor\": 7000,\n        \"currency\": \"SGD\",\n        \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n        \"validTo\": null,\n        \"status\": \"active\",\n        \"isFrom\": false,\n        \"unit\": \"trip\",\n        \"serviceName\": \"Departure Transfer\",\n        \"minimumHours\": null\n      },\n      \"hourly\": {\n        \"catalogId\": 14,\n        \"serviceId\": 3,\n        \"amount\": 65,\n        \"amountMinor\": 6500,\n        \"currency\": \"SGD\",\n        \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n        \"validTo\": null,\n        \"status\": \"active\",\n        \"isFrom\": false,\n        \"unit\": \"hour\",\n        \"serviceName\": \"Hourly\",\n        \"minimumHours\": 3\n      }\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "PUT Set or replace one service rate",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_api_key}}"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/vehicles/{{vehicle_id}}/prices/{{service_code}}",
+            "description": "Path uses service code (arrival), not service ID. amount is required. Omitted isFrom becomes false; minimumHours becomes null; validFrom becomes the database current timestamp; validTo becomes null; status becomes active. Omitted currency reuses the existing rate currency or the vehicle’s single visible currency; provide it explicitly for a new rate on a mixed-currency vehicle. Omitted fields can reset existing settings. For hourly prices, minimumHours may be 1–24. Inactive/future/expired prices are omitted from returned prices. Returns the full combined vehicle; catalogId remains unchanged.\n\n400 INVALID_INPUT; 404 NOT_FOUND for missing vehicle/service.\n\nSee frontend-api-handoff.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 95,\n  \"currency\": \"SGD\",\n  \"isFrom\": false,\n  \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n  \"validTo\": null,\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_api_key}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/vehicles/{{vehicle_id}}/prices/{{service_code}}",
+                "description": "Path uses service code (arrival), not service ID. amount is required. Omitted isFrom becomes false; minimumHours becomes null; validFrom becomes the database current timestamp; validTo becomes null; status becomes active. Omitted currency reuses the existing rate currency or the vehicle’s single visible currency; provide it explicitly for a new rate on a mixed-currency vehicle. Omitted fields can reset existing settings. For hourly prices, minimumHours may be 1–24. Inactive/future/expired prices are omitted from returned prices. Returns the full combined vehicle; catalogId remains unchanged.\n\n400 INVALID_INPUT; 404 NOT_FOUND for missing vehicle/service.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"amount\": 95,\n  \"currency\": \"SGD\",\n  \"isFrom\": false,\n  \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n  \"validTo\": null,\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"vehicle\": {\n    \"id\": 3,\n    \"name\": \"Toyota Alphard / Vellfire\",\n    \"description\": \"Executive MPV\",\n    \"passengerCapacity\": 6,\n    \"currency\": \"SGD\",\n    \"vehicleTypeId\": 2,\n    \"vehicleType\": \"MPV\",\n    \"imageUrl\": \"https://example.com/images/alphard.jpg\",\n    \"status\": \"active\",\n    \"updatedAt\": \"2026-10-05T00:00:00.000Z\",\n    \"luggageCapacity\": 6,\n    \"isActive\": true,\n    \"createdAt\": \"2026-10-01T00:00:00.000Z\",\n    \"prices\": {\n      \"arrival\": {\n        \"catalogId\": 12,\n        \"serviceId\": 1,\n        \"amount\": 95,\n        \"amountMinor\": 9500,\n        \"currency\": \"SGD\",\n        \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n        \"validTo\": null,\n        \"status\": \"active\",\n        \"isFrom\": false,\n        \"unit\": \"trip\",\n        \"serviceName\": \"Arrival\",\n        \"minimumHours\": null\n      },\n      \"departure_transfer\": {\n        \"catalogId\": 13,\n        \"serviceId\": 2,\n        \"amount\": 70,\n        \"amountMinor\": 7000,\n        \"currency\": \"SGD\",\n        \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n        \"validTo\": null,\n        \"status\": \"active\",\n        \"isFrom\": false,\n        \"unit\": \"trip\",\n        \"serviceName\": \"Departure Transfer\",\n        \"minimumHours\": null\n      },\n      \"hourly\": {\n        \"catalogId\": 14,\n        \"serviceId\": 3,\n        \"amount\": 65,\n        \"amountMinor\": 6500,\n        \"currency\": \"SGD\",\n        \"validFrom\": \"2026-10-01T00:00:00.000Z\",\n        \"validTo\": null,\n        \"status\": \"active\",\n        \"isFrom\": false,\n        \"unit\": \"hour\",\n        \"serviceName\": \"Hourly\",\n        \"minimumHours\": 3\n      }\n    }\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST Create service",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_api_key}}"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/services",
+            "description": "code, name and unit are required. Default sortOrder is 0 and status is active. Creating a service does not create vehicle rates; use price PUT for each vehicle. Codes and billing units cannot be changed later.\n\n400 INVALID_INPUT; 409 ALREADY_EXISTS.\n\nSee frontend-api-handoff.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"city_tour\",\n  \"name\": \"City Tour\",\n  \"unit\": \"hour\",\n  \"sortOrder\": 4,\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Example 201 response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_api_key}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/services",
+                "description": "code, name and unit are required. Default sortOrder is 0 and status is active. Creating a service does not create vehicle rates; use price PUT for each vehicle. Codes and billing units cannot be changed later.\n\n400 INVALID_INPUT; 409 ALREADY_EXISTS.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"city_tour\",\n  \"name\": \"City Tour\",\n  \"unit\": \"hour\",\n  \"sortOrder\": 4,\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"service\": {\n    \"id\": 4,\n    \"code\": \"city_tour\",\n    \"name\": \"City Tour\",\n    \"unit\": \"hour\",\n    \"status\": \"active\",\n    \"sortOrder\": 4\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "PATCH Update service",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_api_key}}"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/services/{{admin_service_code}}",
+            "description": "Nonempty object; name, sortOrder and status only. Path is the service code. Inactive services disappear from public lists and new quotes.\n\n400 INVALID_INPUT; 404 NOT_FOUND; 409 ALREADY_EXISTS.\n\nSee frontend-api-handoff.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Private City Tour\",\n  \"sortOrder\": 5,\n  \"status\": \"active\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_api_key}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/services/{{admin_service_code}}",
+                "description": "Nonempty object; name, sortOrder and status only. Path is the service code. Inactive services disappear from public lists and new quotes.\n\n400 INVALID_INPUT; 404 NOT_FOUND; 409 ALREADY_EXISTS.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Private City Tour\",\n  \"sortOrder\": 5,\n  \"status\": \"active\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"service\": {\n    \"id\": 4,\n    \"code\": \"city_tour\",\n    \"name\": \"Private City Tour\",\n    \"unit\": \"hour\",\n    \"status\": \"active\",\n    \"sortOrder\": 5\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin extras and pricing",
+      "item": [
+        {
+          "name": "POST Create add-on",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_api_key}}"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/add-ons",
+            "description": "Required: code, name, pricing_type, price. Defaults: description empty, currency SGD, status ACTIVE. Code is unique and cannot be patched.\n\n400 INVALID_INPUT; 409 ALREADY_EXISTS.\n\nSee frontend-api-handoff.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"EXTRA_WAIT\",\n  \"name\": \"Extra waiting\",\n  \"description\": \"Optional waiting charge\",\n  \"pricing_type\": \"FIXED\",\n  \"price\": 15,\n  \"currency\": \"SGD\",\n  \"status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Example 201 response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_api_key}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/add-ons",
+                "description": "Required: code, name, pricing_type, price. Defaults: description empty, currency SGD, status ACTIVE. Code is unique and cannot be patched.\n\n400 INVALID_INPUT; 409 ALREADY_EXISTS.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"code\": \"EXTRA_WAIT\",\n  \"name\": \"Extra waiting\",\n  \"description\": \"Optional waiting charge\",\n  \"pricing_type\": \"FIXED\",\n  \"price\": 15,\n  \"currency\": \"SGD\",\n  \"status\": \"ACTIVE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"add_on\": {\n    \"id\": 6,\n    \"code\": \"EXTRA_WAIT\",\n    \"name\": \"Extra waiting\",\n    \"description\": \"Optional waiting charge\",\n    \"pricing_type\": \"FIXED\",\n    \"price\": 15,\n    \"currency\": \"SGD\",\n    \"status\": \"ACTIVE\",\n    \"created_at\": \"2026-10-05T00:00:00.000Z\",\n    \"updated_at\": \"2026-10-05T00:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "PATCH Update add-on",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_api_key}}"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/add-ons/{{baby_seat_id}}",
+            "description": "Nonempty object. Allowed: name, description, pricing_type, price, currency, status. Deactivate with status: INACTIVE. Existing booking snapshots retain their original names/prices.\n\n400 INVALID_INPUT; 404 NOT_FOUND.\n\nSee frontend-api-handoff.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"price\": 25,\n  \"status\": \"ACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_api_key}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/add-ons/{{baby_seat_id}}",
+                "description": "Nonempty object. Allowed: name, description, pricing_type, price, currency, status. Deactivate with status: INACTIVE. Existing booking snapshots retain their original names/prices.\n\n400 INVALID_INPUT; 404 NOT_FOUND.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"price\": 25,\n  \"status\": \"ACTIVE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"add_on\": {\n    \"id\": 3,\n    \"code\": \"BABY_SEAT\",\n    \"name\": \"Baby Seat\",\n    \"description\": \"\",\n    \"pricing_type\": \"FIXED\",\n    \"price\": 25,\n    \"currency\": \"SGD\",\n    \"status\": \"ACTIVE\",\n    \"created_at\": \"2026-10-01T00:00:00.000Z\",\n    \"updated_at\": \"2026-10-05T00:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET List distance rules",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_api_key}}"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/distance-pricing-rules",
+            "description": "Admin token required even though this is a GET. Returns active and inactive rules. Frontend booking UI can use the quoted distance_charge; it does not need admin rule access.\n\n\n\nSee frontend-api-handoff.md."
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_api_key}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/distance-pricing-rules",
+                "description": "Admin token required even though this is a GET. Returns active and inactive rules. Frontend booking UI can use the quoted distance_charge; it does not need admin rule access.\n\n\n\nSee frontend-api-handoff.md."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"data\": [\n    {\n      \"id\": 1,\n      \"min_distance_km\": 0,\n      \"max_distance_km\": 28,\n      \"min_inclusive\": true,\n      \"max_inclusive\": false,\n      \"surcharge\": 0,\n      \"currency\": \"SGD\",\n      \"is_contact_support\": false,\n      \"status\": \"ACTIVE\",\n      \"created_at\": \"2026-10-01T00:00:00.000Z\",\n      \"updated_at\": \"2026-10-05T00:00:00.000Z\"\n    },\n    {\n      \"id\": 2,\n      \"min_distance_km\": 28,\n      \"max_distance_km\": 30,\n      \"min_inclusive\": true,\n      \"max_inclusive\": false,\n      \"surcharge\": 5,\n      \"currency\": \"SGD\",\n      \"is_contact_support\": false,\n      \"status\": \"ACTIVE\",\n      \"created_at\": \"2026-10-01T00:00:00.000Z\",\n      \"updated_at\": \"2026-10-05T00:00:00.000Z\"\n    },\n    {\n      \"id\": 3,\n      \"min_distance_km\": 30,\n      \"max_distance_km\": 32,\n      \"min_inclusive\": true,\n      \"max_inclusive\": false,\n      \"surcharge\": 10,\n      \"currency\": \"SGD\",\n      \"is_contact_support\": false,\n      \"status\": \"ACTIVE\",\n      \"created_at\": \"2026-10-01T00:00:00.000Z\",\n      \"updated_at\": \"2026-10-05T00:00:00.000Z\"\n    },\n    {\n      \"id\": 4,\n      \"min_distance_km\": 32,\n      \"max_distance_km\": 35,\n      \"min_inclusive\": true,\n      \"max_inclusive\": true,\n      \"surcharge\": 15,\n      \"currency\": \"SGD\",\n      \"is_contact_support\": false,\n      \"status\": \"ACTIVE\",\n      \"created_at\": \"2026-10-01T00:00:00.000Z\",\n      \"updated_at\": \"2026-10-05T00:00:00.000Z\"\n    },\n    {\n      \"id\": 5,\n      \"min_distance_km\": 35,\n      \"max_distance_km\": null,\n      \"min_inclusive\": false,\n      \"max_inclusive\": false,\n      \"surcharge\": 0,\n      \"currency\": \"SGD\",\n      \"is_contact_support\": true,\n      \"status\": \"ACTIVE\",\n      \"created_at\": \"2026-10-01T00:00:00.000Z\",\n      \"updated_at\": \"2026-10-05T00:00:00.000Z\"\n    }\n  ]\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST Create distance rule",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_api_key}}"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/distance-pricing-rules",
+            "description": "min_distance_km is required. Defaults: max_distance_km null, min_inclusive true, max_inclusive false, surcharge 0, currency SGD, is_contact_support false, status ACTIVE. Example is inactive so it does not overlap the default >35 km rule. Active ranges cannot overlap. A null maximum is unbounded. Rule gaps cause quoting failures instead of a zero-charge fallback.\n\n400 INVALID_INPUT; 409 OVERLAPPING_RULES.\n\nSee frontend-api-handoff.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"min_distance_km\": 40,\n  \"max_distance_km\": null,\n  \"min_inclusive\": false,\n  \"max_inclusive\": false,\n  \"surcharge\": 0,\n  \"currency\": \"SGD\",\n  \"is_contact_support\": true,\n  \"status\": \"INACTIVE\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Example 201 response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_api_key}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/distance-pricing-rules",
+                "description": "min_distance_km is required. Defaults: max_distance_km null, min_inclusive true, max_inclusive false, surcharge 0, currency SGD, is_contact_support false, status ACTIVE. Example is inactive so it does not overlap the default >35 km rule. Active ranges cannot overlap. A null maximum is unbounded. Rule gaps cause quoting failures instead of a zero-charge fallback.\n\n400 INVALID_INPUT; 409 OVERLAPPING_RULES.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"min_distance_km\": 40,\n  \"max_distance_km\": null,\n  \"min_inclusive\": false,\n  \"max_inclusive\": false,\n  \"surcharge\": 0,\n  \"currency\": \"SGD\",\n  \"is_contact_support\": true,\n  \"status\": \"INACTIVE\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"distance_rule\": {\n    \"id\": 6,\n    \"min_distance_km\": 40,\n    \"max_distance_km\": null,\n    \"min_inclusive\": false,\n    \"max_inclusive\": false,\n    \"surcharge\": 0,\n    \"currency\": \"SGD\",\n    \"is_contact_support\": true,\n    \"status\": \"INACTIVE\",\n    \"created_at\": \"2026-10-05T00:00:00.000Z\",\n    \"updated_at\": \"2026-10-05T00:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "PATCH Update distance rule",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{admin_api_key}}"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/distance-pricing-rules/{{distance_rule_id}}",
+            "description": "Nonempty object. Editable fields are min_distance_km, max_distance_km, min_inclusive, max_inclusive, surcharge, currency, is_contact_support and status. The database checks merged range bounds, overlap and support-rule surcharge. Update one bracket carefully to preserve coverage.\n\n400 INVALID_INPUT; 404 NOT_FOUND; 409 OVERLAPPING_RULES.\n\nSee frontend-api-handoff.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"surcharge\": 7.5\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "PATCH",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Authorization",
+                    "value": "Bearer {{admin_api_key}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/distance-pricing-rules/{{distance_rule_id}}",
+                "description": "Nonempty object. Editable fields are min_distance_km, max_distance_km, min_inclusive, max_inclusive, surcharge, currency, is_contact_support and status. The database checks merged range bounds, overlap and support-rule surcharge. Update one bracket carefully to preserve coverage.\n\n400 INVALID_INPUT; 404 NOT_FOUND; 409 OVERLAPPING_RULES.\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"surcharge\": 7.5\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"success\": true,\n  \"distance_rule\": {\n    \"id\": 2,\n    \"min_distance_km\": 28,\n    \"max_distance_km\": 30,\n    \"min_inclusive\": true,\n    \"max_inclusive\": false,\n    \"surcharge\": 7.5,\n    \"currency\": \"SGD\",\n    \"is_contact_support\": false,\n    \"status\": \"ACTIVE\",\n    \"created_at\": \"2026-10-01T00:00:00.000Z\",\n    \"updated_at\": \"2026-10-05T00:00:00.000Z\"\n  }\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Operations and Stripe",
+      "item": [
+        {
+          "name": "GET Process health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/health",
+            "description": "Root path, outside /api. Confirms the HTTP process is alive; it does not check database, Google or Stripe configuration.\n\n\n\nSee frontend-api-handoff.md."
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/health",
+                "description": "Root path, outside /api. Confirms the HTTP process is alive; it does not check database, Google or Stripe configuration.\n\n\n\nSee frontend-api-handoff.md."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"ok\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "GET Database readiness",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{base_url}}/ready",
+            "description": "Root path, outside /api. Checks database connectivity. It does not verify Google/Stripe or all migrations.\n\n503 NOT_READY when the database check fails.\n\nSee frontend-api-handoff.md."
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": "{{base_url}}/ready",
+                "description": "Root path, outside /api. Checks database connectivity. It does not verify Google/Stripe or all migrations.\n\n503 NOT_READY when the database check fails.\n\nSee frontend-api-handoff.md."
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"status\": \"ready\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "POST Stripe payment notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Stripe-Signature",
+                "value": "{{stripe_signature}}"
+              }
+            ],
+            "url": "{{base_url}}{{api_prefix}}/payments/stripe/webhook",
+            "description": "Stripe calls this server endpoint. Required header: Stripe-Signature generated for this exact raw payload and endpoint signing secret. The body example shows fields the handler uses; real Stripe events contain additional fields. Do not call it from React to mark a booking paid. Unsigned Postman requests return 400 INVALID_SIGNATURE. Match stored booking UUID/client reference, public booking number for new sessions, session ID, amount, currency and test/live mode before applying updates. Amount_total is cents (14500 means SGD 145.00).\n\n400 INVALID_SIGNATURE; 503 PAYMENT_NOT_CONFIGURED; 500 INTERNAL_ERROR for storage/matching failures (logged internally without customer data).\n\nSee frontend-api-handoff.md.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"id\": \"evt_example_completed\",\n  \"object\": \"event\",\n  \"type\": \"checkout.session.completed\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"cs_example\",\n      \"object\": \"checkout.session\",\n      \"mode\": \"payment\",\n      \"payment_status\": \"paid\",\n      \"amount_total\": 14500,\n      \"currency\": \"sgd\",\n      \"livemode\": false,\n      \"client_reference_id\": \"6f75c918-cc55-409a-bb52-95a1739de910\",\n      \"metadata\": {\n        \"booking_id\": \"BK20261005001\",\n        \"booking_uuid\": \"6f75c918-cc55-409a-bb52-95a1739de910\",\n        \"customer_name\": \"John Smith\",\n        \"customer_phone\": \"+6591234567\",\n        \"customer_email\": \"john@example.com\"\n      },\n      \"payment_intent\": \"pi_example\"\n    }\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "Example 200 response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "Stripe-Signature",
+                    "value": "{{stripe_signature}}"
+                  }
+                ],
+                "url": "{{base_url}}{{api_prefix}}/payments/stripe/webhook",
+                "description": "Stripe calls this server endpoint. Required header: Stripe-Signature generated for this exact raw payload and endpoint signing secret. The body example shows fields the handler uses; real Stripe events contain additional fields. Do not call it from React to mark a booking paid. Unsigned Postman requests return 400 INVALID_SIGNATURE. Match stored booking UUID/client reference, public booking number for new sessions, session ID, amount, currency and test/live mode before applying updates. Amount_total is cents (14500 means SGD 145.00).\n\n400 INVALID_SIGNATURE; 503 PAYMENT_NOT_CONFIGURED; 500 INTERNAL_ERROR for storage/matching failures (logged internally without customer data).\n\nSee frontend-api-handoff.md.",
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"id\": \"evt_example_completed\",\n  \"object\": \"event\",\n  \"type\": \"checkout.session.completed\",\n  \"data\": {\n    \"object\": {\n      \"id\": \"cs_example\",\n      \"object\": \"checkout.session\",\n      \"mode\": \"payment\",\n      \"payment_status\": \"paid\",\n      \"amount_total\": 14500,\n      \"currency\": \"sgd\",\n      \"livemode\": false,\n      \"client_reference_id\": \"6f75c918-cc55-409a-bb52-95a1739de910\",\n      \"metadata\": {\n        \"booking_id\": \"BK20261005001\",\n        \"booking_uuid\": \"6f75c918-cc55-409a-bb52-95a1739de910\",\n        \"customer_name\": \"John Smith\",\n        \"customer_phone\": \"+6591234567\",\n        \"customer_email\": \"john@example.com\"\n      },\n      \"payment_intent\": \"pi_example\"\n    }\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "body": "{\n  \"received\": true\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
