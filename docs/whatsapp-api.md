@@ -1,6 +1,6 @@
 # WhatsApp booking confirmation
 
-Admin-triggered Meta WhatsApp Cloud API integration. This endpoint sends a booking confirmation to the customer phone stored on the booking. It does not automatically send on payment or implement Meta's incoming/delivery webhook.
+Admin-triggered Meta WhatsApp Cloud API integration. This endpoint sends a booking confirmation to the customer phone stored on the booking. It does not automatically send on payment. Separate webhook handlers receive and store incoming messages and delivery events as described below.
 
 ## Setup
 
@@ -31,6 +31,24 @@ Repeating an accepted send returns `200` with `duplicate: true` and the original
 
 Errors: `400 INVALID_INPUT` for invalid ID/body/phone or missing consent; `401 UNAUTHORIZED`; `404 NOT_FOUND`; `409 BOOKING_NOT_CONFIRMED`; `503 WHATSAPP_NOT_CONFIGURED`; `502 WHATSAPP_SEND_UNCERTAIN` if Meta acceptance cannot be confirmed. Repeating an uncertain or pending send returns `409 WHATSAPP_SEND_UNCERTAIN`.
 
-Timeouts, rejected requests, crashes and database write failures can leave an attempt UNKNOWN or PENDING. No automatic resend is attempted because Meta may already have accepted the message. An operator must check Meta logs/delivery records before repairing or resetting the attempt in the database. Do not blindly reset a pending attempt while its request may still be running. A delivery webhook and reconciliation workflow can be added separately for automated recovery and delivered/read/failed status tracking.
+Timeouts, rejected requests, crashes and database write failures can leave an attempt UNKNOWN or PENDING. No automatic resend is attempted because Meta may already have accepted the message. An operator must check Meta logs/delivery records before repairing or resetting the attempt in the database. Do not blindly reset a pending attempt while its request may still be running. Delivery events are stored in the webhook inbox; automatic reconciliation of send attempts is not implemented.
 
 This API does not change payment status or booking status. Test with Meta's test phone and an authorized test recipient before production. See [Meta messages API](https://developers.facebook.com/docs/whatsapp/cloud-api/reference/messages) and [WhatsApp messaging policy](https://business.whatsapp.com/policy).
+
+## Meta callback webhook
+
+Apply migration 026 and configure `WHATSAPP_VERIFY_TOKEN` (a strong secret you choose) and `WHATSAPP_APP_SECRET` (Meta App settings > Basic > App secret), then restart the backend. These differ from the WhatsApp API access token. Store the secrets in server environment settings; do not commit them.
+
+Register `https://api.singaporemaxicabs.com.sg/api/v1/whatsapp/webhook` as the Meta callback URL with the matching verification token, then subscribe to the `messages` field. Both `/api` and `/api/v1` aliases are supported. Publish the Meta app to receive production webhook traffic as required by the app dashboard; dashboard test events can be used before publication.
+
+GET verification checks `hub.mode=subscribe` and `hub.verify_token`, then returns `hub.challenge` as plain text with HTTP 200. Invalid verification requests return 403; missing verification configuration returns 503. Test locally after setting WHATSAPP_VERIFY_TOKEN=local-test-token:
+
+```sh
+curl -i 'http://localhost:3000/api/v1/whatsapp/webhook?hub.mode=subscribe&hub.verify_token=local-test-token&hub.challenge=123456'
+```
+
+POST receives JSON and validates `X-Hub-Signature-256` using HMAC SHA-256 over the exact raw body and the Meta App Secret. Unsigned or tampered requests return 401; malformed JSON/payloads return 400. Meta payloads must use object `whatsapp_business_account` and an entry array. The raw body limit is 256 KB. No admin bearer token is required on these callback endpoints.
+
+Valid incoming messages and delivery updates are stored in `whatsapp_webhook_events.payload` as JSONB before returning `{ "received": true }`. Identical payloads are deduplicated using a SHA-256 payload hash. A failed database write returns 500 for Meta to retry. Delivery statuses are recorded in the inbox, not automatically applied to booking confirmation records. No automated replies or outbound sends occur from this webhook. Out-of-order status updates are retained as events rather than overwriting a current status. Restrict access to this table because it contains customer messages/phone numbers; define retention for your operational needs.
+
+To find status updates for a sent message, inspect the payload's `entry[].changes[].value.statuses[]` and match its `id` to the `message_id` returned by the send API. Incoming messages are in `entry[].changes[].value.messages[]`.

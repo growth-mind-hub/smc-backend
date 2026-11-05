@@ -7,6 +7,8 @@ const supportedEvents = ['checkout.session.completed', 'checkout.session.async_p
 export function bookingRepository(pool, transaction) {
   const getByKey = async (key, client = pool) => (await client.query('SELECT * FROM bookings WHERE idempotency_key = $1', [key])).rows[0] ?? null;
   return {
+    saveWhatsappWebhook: async (hash, payload) => pool.query(`INSERT INTO whatsapp_webhook_events (payload_hash, payload)
+      VALUES ($1, $2::jsonb) ON CONFLICT (payload_hash) DO NOTHING`, [hash, JSON.stringify(payload)]),
     claimEmailConfirmation: async id => (await pool.query(`INSERT INTO booking_email_confirmations (booking_id)
       VALUES ($1) ON CONFLICT (booking_id) DO NOTHING RETURNING booking_id`, [id])).rowCount === 1,
     getEmailConfirmation: async id => (await pool.query(

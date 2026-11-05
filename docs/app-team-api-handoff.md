@@ -260,7 +260,7 @@ Database updates already verified in the configured database during this work: f
 
 POST `/api/v1/bookings/:id/whatsapp-confirmation` (also under `/api`). Requires admin bearer authentication, JSON body `{"whatsapp_opt_in":true}`, and migration 023. Send only after obtaining customer consent. The recipient and five approved template parameters come from the stored booking. Paid bookings and confirmed manual bookings are eligible; cancelled bookings are rejected.
 
-Returns 202 with `status: ACCEPTED` and `message_id` when Meta accepts the message; this does not confirm delivery. Repeat calls return the original message ID without sending again. Uncertain sends require operator review before any resend. The API is explicitly triggered; Stripe payment events do not automatically send WhatsApp messages. No Meta delivery webhook is included.
+Returns 202 with `status: ACCEPTED` and `message_id` when Meta accepts the message; this does not confirm delivery. Repeat calls return the original message ID without sending again. Uncertain sends require operator review before any resend. The API is explicitly triggered; Stripe payment events do not automatically send WhatsApp messages. Meta webhook verification and event storage are available at /api/v1/whatsapp/webhook; configure the verify token and App Secret and apply migration 026.
 
 See [WhatsApp integration and setup](whatsapp-api.md) for required server environment variables, template order, responses and recovery limitations.
 

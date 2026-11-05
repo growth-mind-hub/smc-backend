@@ -110,6 +110,10 @@ export async function migrate(pool) {
       await client.query(await readFile(new URL('../db/025-booking-email-confirmations.sql', import.meta.url), 'utf8'));
       await client.query('INSERT INTO schema_migrations (version) VALUES (25)');
     }
+    if (!(await client.query('SELECT version FROM schema_migrations WHERE version = 26')).rowCount) {
+      await client.query(await readFile(new URL('../db/026-whatsapp-webhooks.sql', import.meta.url), 'utf8'));
+      await client.query('INSERT INTO schema_migrations (version) VALUES (26)');
+    }
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');
