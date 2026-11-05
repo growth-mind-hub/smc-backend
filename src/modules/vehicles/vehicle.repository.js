@@ -140,7 +140,8 @@ export async function openVehicleStore(connectionString = process.env.DATABASE_U
       [code, body.name?.trim() ?? null, body.sortOrder ?? null, body.status ?? null]);
       return rows[0] ?? null;
     },
-    list: async () => mapRows((await pool.query(select + " WHERE v.status = 'active' ORDER BY v.id, s.service_code")).rows),
+    list: async ({ includeInactive = false } = {}) => mapRows((await pool.query(select +
+      (includeInactive ? '' : " WHERE v.status = 'active'") + ' ORDER BY v.id, s.service_code')).rows),
     recommend: async (persons, luggage) => mapRows((await pool.query(select + `
       WHERE v.status = 'active' AND v.passenger_capacity >= $1 AND v.luggage_capacity >= $2
       AND EXISTS (SELECT 1 FROM vehicle_service_prices configured JOIN services cs ON cs.id = configured.service_id WHERE configured.vehicle_id = v.id AND configured.status = 'active' AND cs.status = 'active' AND configured.valid_from <= CURRENT_TIMESTAMP AND (configured.valid_to IS NULL OR configured.valid_to > CURRENT_TIMESTAMP))

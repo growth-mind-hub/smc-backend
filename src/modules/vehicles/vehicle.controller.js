@@ -30,7 +30,7 @@ export function vehicleController({ vehicleStore }) {
     listVehicles: async (req, res) => {
       const { requirements, details } = parseRequirements(req.query);
       if (details.length) { return error(req, res, 400, 'INVALID_INPUT', 'Check passenger and luggage counts.', details); }
-      const { data } = annotateVehicles(await vehicleStore.list(), requirements);
+      const { data } = annotateVehicles(await vehicleStore.list({ includeInactive: true }), requirements);
       res.setHeader('Cache-Control', 'no-store');
       return res.json({ success: true, requirements, data });
     },

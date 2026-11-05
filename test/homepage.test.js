@@ -32,3 +32,22 @@ test('no matches returns a successful empty recommendation', async () => {
   const { body } = await request(empty).get('/api/vehicles/recommend?persons=4&luggage=3').expect(200);
   assert.deepEqual(body.data, []);
 });
+
+test('vehicle list includes inactive cards without recommending them', async () => {
+  const fleet = [
+    { id: 1, status: 'inactive', isActive: false, passengerCapacity: 3, luggageCapacity: 2, prices: { arrival: { amount: 80 } } },
+    { id: 2, status: 'active', isActive: true, passengerCapacity: 7, luggageCapacity: 6, prices: { arrival: { amount: 90 } } },
+  ];
+  const mixed = createApp({ logger: { info() {}, error() {} }, vehicleStore: {
+    async list({ includeInactive = false } = {}) { return includeInactive ? fleet : fleet.filter(v => v.isActive); },
+  } });
+  for (const prefix of ['/api', '/api/v1']) {
+    const unfiltered = (await request(mixed).get(`${prefix}/vehicles`).expect(200)).body.data;
+    assert.deepEqual(unfiltered.map(v => v.id), [1, 2]);
+    assert.ok(unfiltered.every(v => v.recommendation === false));
+    const list = (await request(mixed).get(`${prefix}/vehicles?persons=2&luggage=1`).expect(200)).body.data;
+    assert.deepEqual(list.map(v => v.recommendation), [false, true]);
+    const recommended = (await request(mixed).get(`${prefix}/vehicles/recommend?persons=2&luggage=1`).expect(200)).body.data;
+    assert.deepEqual(recommended.map(v => v.id), [2]);
+  }
+});

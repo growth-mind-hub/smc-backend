@@ -15,7 +15,8 @@ export function parseRequirements(query) {
 }
 
 export function annotateVehicles(vehicles, requirements) {
-  const suitable = vehicle => Number.isInteger(vehicle.passengerCapacity) && Number.isInteger(vehicle.luggageCapacity) &&
+  const suitable = vehicle => vehicle.status !== 'inactive' && vehicle.isActive !== false &&
+    Number.isInteger(vehicle.passengerCapacity) && Number.isInteger(vehicle.luggageCapacity) &&
     vehicle.passengerCapacity >= requirements.persons && vehicle.luggageCapacity >= requirements.luggage &&
     Object.keys(vehicle.prices ?? {}).length > 0;
   const unused = vehicle => vehicle.passengerCapacity - requirements.persons + vehicle.luggageCapacity - requirements.luggage;

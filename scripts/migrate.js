@@ -98,6 +98,10 @@ export async function migrate(pool) {
       await client.query(await readFile(new URL('../db/022-expand-fleet-descriptions.sql', import.meta.url), 'utf8'));
       await client.query('INSERT INTO schema_migrations (version) VALUES (22)');
     }
+    if (!(await client.query('SELECT version FROM schema_migrations WHERE version = 23')).rowCount) {
+      await client.query(await readFile(new URL('../db/023-whatsapp-confirmations.sql', import.meta.url), 'utf8'));
+      await client.query('INSERT INTO schema_migrations (version) VALUES (23)');
+    }
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');

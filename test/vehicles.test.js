@@ -113,6 +113,7 @@ integration('database recommendations require active vehicles with verified capa
   assert.ok(!(await store.recommend(7, 3)).some(v => v.id === vehicle.id));
   await store.updateVehicle(vehicle.id, { isActive: false });
   assert.ok(!(await store.list()).some(v => v.id === vehicle.id));
+  assert.ok((await store.list({ includeInactive: true })).some(v => v.id === vehicle.id && v.status === 'inactive'));
   assert.ok(!(await store.recommend(4, 3)).some(v => v.id === vehicle.id));
   await store.updateVehicle(vehicle.id, { isActive: true, luggageCapacity: null });
   assert.ok(!(await store.recommend(4, 0)).some(v => v.id === vehicle.id));
@@ -204,6 +205,12 @@ integration('checkout saves immutable snapshots, concurrent retries create one b
   const hash = createHash('sha256').update(JSON.stringify(input)).digest('hex');
   const [first, second] = await Promise.all([store.createCheckoutBooking(input, quote, key, hash), store.createCheckoutBooking(input, quote, key, hash)]);
   assert.equal(first.id, second.id);
+  const notificationClaims = await Promise.all([
+    store.claimWhatsappConfirmation(first.id), store.claimWhatsappConfirmation(first.id),
+  ]);
+  assert.equal(notificationClaims.filter(Boolean).length, 1);
+  await store.finishWhatsappConfirmation(first.id, 'ACCEPTED', 'wamid.integration');
+  assert.deepEqual(await store.getWhatsappConfirmation(first.id), { status: 'ACCEPTED', message_id: 'wamid.integration' });
   assert.match(first.booking_number, /^BK\d{8}\d{3,}$/);
   assert.equal(Number(first.total_amount_minor), 10500);
   assert.equal(first.status, 'PENDING_PAYMENT');

@@ -182,7 +182,7 @@ curl -X PATCH "$BASE_URL/api/v1/vehicles/3" \
 {"vehicle":{"id":3,"name":"Toyota Alphard / Vellfire","status":"active","isActive":true}}
 ```
 
-Vehicle status is lowercase; add-on status is uppercase. Inactive vehicles disappear from public fleet lists and cannot be used for new quotes. Existing bookings remain. Public fleet lists contain only active vehicles; retain the vehicle ID to reactivate it or fetch it by GET `/api/v1/vehicles/:id`.
+Vehicle status is lowercase; add-on status is uppercase. GET /api/v1/vehicles includes active and inactive vehicles with status and isActive fields. Inactive vehicles cannot be recommended or used for new quotes. The recommendation endpoint returns active vehicles only. Existing bookings remain. To fetch a vehicle directly, use GET `/api/v1/vehicles/:id`.
 
 ## Fleet description
 
@@ -253,3 +253,11 @@ Deployment: apply migrations with `npm run db:migrate` and restart the backend. 
 | 022 | Expand the six original short descriptions; preserve later admin edits |
 
 Database updates already verified in the configured database during this work: five missing eight-hour rates and six short descriptions. This does not confirm that a separate live environment has applied all migrations or deployed the new API code.
+
+## Send WhatsApp booking confirmation
+
+POST `/api/v1/bookings/:id/whatsapp-confirmation` (also under `/api`). Requires admin bearer authentication, JSON body `{"whatsapp_opt_in":true}`, and migration 023. Send only after obtaining customer consent. The recipient and five approved template parameters come from the stored booking. Paid bookings and confirmed manual bookings are eligible; cancelled bookings are rejected.
+
+Returns 202 with `status: ACCEPTED` and `message_id` when Meta accepts the message; this does not confirm delivery. Repeat calls return the original message ID without sending again. Uncertain sends require operator review before any resend. The API is explicitly triggered; Stripe payment events do not automatically send WhatsApp messages. No Meta delivery webhook is included.
+
+See [WhatsApp integration and setup](whatsapp-api.md) for required server environment variables, template order, responses and recovery limitations.

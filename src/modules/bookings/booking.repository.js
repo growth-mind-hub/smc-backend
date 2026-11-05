@@ -7,6 +7,12 @@ const supportedEvents = ['checkout.session.completed', 'checkout.session.async_p
 export function bookingRepository(pool, transaction) {
   const getByKey = async (key, client = pool) => (await client.query('SELECT * FROM bookings WHERE idempotency_key = $1', [key])).rows[0] ?? null;
   return {
+    claimWhatsappConfirmation: async id => (await pool.query(`INSERT INTO booking_whatsapp_confirmations (booking_id)
+      VALUES ($1) ON CONFLICT (booking_id) DO NOTHING RETURNING booking_id`, [id])).rowCount === 1,
+    getWhatsappConfirmation: async id => (await pool.query(
+      'SELECT status, message_id FROM booking_whatsapp_confirmations WHERE booking_id = $1', [id])).rows[0] ?? null,
+    finishWhatsappConfirmation: async (id, status, messageId) => pool.query(`UPDATE booking_whatsapp_confirmations
+      SET status = $2, message_id = $3, updated_at = CURRENT_TIMESTAMP WHERE booking_id = $1`, [id, status, messageId]),
     listBookings: async (limit, offset) => (await pool.query(
       'SELECT * FROM bookings ORDER BY created_at DESC, id DESC LIMIT $1 OFFSET $2', [limit, offset])).rows,
     getBooking: async id => (await pool.query(

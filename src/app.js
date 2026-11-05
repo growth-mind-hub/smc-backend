@@ -12,6 +12,7 @@ import { stripePaymentProvider } from './modules/bookings/stripe-payment.js';
 import { sendError as error, errorHandler } from './middleware/errors.js';
 import { adminLogin } from './middleware/admin-login.js';
 import { bookingAdminRoutes } from './modules/bookings/admin.routes.js';
+import { whatsappProvider, whatsappRoutes } from './modules/bookings/whatsapp.js';
 
 export function createApp({
   vehicleUploadDir = process.env.VEHICLE_UPLOAD_DIR ?? '/var/lib/maxicab/uploads/vehicles',
@@ -22,6 +23,7 @@ export function createApp({
   adminApiKey = process.env.ADMIN_API_KEY,
   distanceProvider = googleDistanceProvider(),
   paymentProvider = stripePaymentProvider(),
+  whatsapp = whatsappProvider(),
 } = {}) {
   if (!vehicleStore) {
     throw new Error('vehicleStore is required; initialize PostgreSQL first.');
@@ -116,6 +118,9 @@ export function createApp({
   }));
   app.use('/api/v1', bookingAdminRoutes({ vehicleStore, adminApiKey, adminAuth, distanceProvider }));
   app.use('/api', bookingAdminRoutes({ vehicleStore, adminApiKey, adminAuth, distanceProvider }));
+
+  app.use('/api/v1', whatsappRoutes({ vehicleStore, adminApiKey, adminAuth, whatsapp }));
+  app.use('/api', whatsappRoutes({ vehicleStore, adminApiKey, adminAuth, whatsapp }));
 
   app.use((req, res) => error(
     req, res, 404, 'NOT_FOUND', 'Endpoint not found.',
