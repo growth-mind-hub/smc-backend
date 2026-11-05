@@ -28,6 +28,10 @@ stripe listen --forward-to localhost:3000/api/payments/stripe/webhook
 
 Use the listener's signing secret for local verification. Hosted endpoints use their own Dashboard signing secret. See [Stripe signature verification](https://docs.stripe.com/webhooks/signature). The code verifies the unmodified request body before applying an event. Browser redirects do not mark bookings paid.
 
+## Payment methods
+
+New Checkout sessions explicitly allow only `card` and `paynow`. Apple Pay is a card wallet, so it is not a separate entry in `payment_method_types`; Stripe displays it on eligible devices/browsers with a configured wallet. Enable Apple Pay and PayNow in Stripe Dashboard payment method settings and disable Google Pay there to keep the displayed choices limited to card, PayNow and eligible Apple Pay. Google Pay is also a card wallet and is not excluded by the `card`/`paynow` list alone. Existing saved sessions retain their original payment methods; create a new checkout attempt after deployment to verify the change.
+
 ## Invoice creation
 
 New Stripe Checkout sessions explicitly disable post-payment invoice creation with `invoice_creation: { enabled: false }`. The booking customer email is still passed as `customer_email`.

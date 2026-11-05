@@ -26,8 +26,9 @@ export function stripePaymentProvider({ secretKey = process.env.STRIPE_SECRET_KE
       let session;
       try {
         session = await stripe.checkout.sessions.create({
-          // Let Stripe select eligible methods from the Dashboard configuration.
+          // Apple Pay is offered through card when eligible; disable Google Pay in the Dashboard.
           mode: 'payment',
+          payment_method_types: ['card', 'paynow'],
           invoice_creation: { enabled: false },
           adaptive_pricing: { enabled: false }, automatic_tax: { enabled: false }, allow_promotion_codes: false,
           client_reference_id: booking.id, customer_email: booking.customer_email,
