@@ -46,7 +46,7 @@ test('admin creates manual bookings without Stripe, with retry protection and va
 test('manual repository creation saves payment method and confirmed status together', async () => {
   const store = bookingRepository({}, fn => fn({ async query(sql, values) {
     assert.match(sql, /INSERT INTO bookings/);
-    assert.deepEqual(values.slice(19), ['MANUAL', 'CONFIRMED', 'Driver', '']);
+    assert.deepEqual(values.slice(19), ['MANUAL', 'CONFIRMED', 'Driver', '', 0]);
     return { rows: [{ request_hash: 'hash', payment_method: 'MANUAL' }] };
   } }));
   await store.createCheckoutBooking(input, { catalog_id: 1, route: { distance_km: 10 }, vehicle_amount: 80,

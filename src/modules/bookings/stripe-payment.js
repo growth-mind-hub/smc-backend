@@ -26,9 +26,9 @@ export function stripePaymentProvider({ secretKey = process.env.STRIPE_SECRET_KE
       let session;
       try {
         session = await stripe.checkout.sessions.create({
-          // Apple Pay is offered through card when eligible; disable Google Pay in the Dashboard.
+          // Card wallets can still appear when enabled in Stripe Dashboard.
           mode: 'payment',
-          payment_method_types: ['card', 'paynow'],
+          payment_method_types: ['card'],
           invoice_creation: { enabled: false },
           adaptive_pricing: { enabled: false }, automatic_tax: { enabled: false }, allow_promotion_codes: false,
           client_reference_id: booking.id, customer_email: booking.customer_email,
@@ -36,8 +36,12 @@ export function stripePaymentProvider({ secretKey = process.env.STRIPE_SECRET_KE
           payment_intent_data: { metadata },
           success_url: successUrl, cancel_url: cancelUrl,
           expires_at: Math.floor(new Date(booking.checkout_expires_at).getTime() / 1000),
-          line_items: [{ price_data: { currency: booking.currency.toLowerCase(), unit_amount: Number(booking.total_amount_minor),
-            product_data: { name: `Vehicle Booking - ${booking.booking_number}`, description: `${booking.quote_snapshot.vehicle.name} – ${booking.quote_snapshot.service.name}` } }, quantity: 1 }],
+          line_items: [{ price_data: { currency: booking.currency.toLowerCase(), unit_amount: Number(booking.total_amount_minor) - Number(booking.card_surcharge_minor ?? 0),
+            product_data: { name: `Vehicle Booking - ${booking.booking_number}`, description: `${booking.quote_snapshot.vehicle.name} – ${booking.quote_snapshot.service.name}` } }, quantity: 1 },
+          ...(Number(booking.card_surcharge_minor ?? 0) > 0 ? [{ price_data: {
+            currency: booking.currency.toLowerCase(), unit_amount: Number(booking.card_surcharge_minor),
+            product_data: { name: 'Card payment surcharge (10%)' },
+          }, quantity: 1 }] : [])],
         }, { idempotencyKey: `booking-checkout-${booking.id}` });
       } catch (err) {
         const error = failure('PAYMENT_UNAVAILABLE', 'Stripe checkout could not be created. Retry using the same Idempotency-Key.');

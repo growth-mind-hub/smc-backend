@@ -102,6 +102,14 @@ export async function migrate(pool) {
       await client.query(await readFile(new URL('../db/023-whatsapp-confirmations.sql', import.meta.url), 'utf8'));
       await client.query('INSERT INTO schema_migrations (version) VALUES (23)');
     }
+    if (!(await client.query('SELECT version FROM schema_migrations WHERE version = 24')).rowCount) {
+      await client.query(await readFile(new URL('../db/024-card-surcharge.sql', import.meta.url), 'utf8'));
+      await client.query('INSERT INTO schema_migrations (version) VALUES (24)');
+    }
+    if (!(await client.query('SELECT version FROM schema_migrations WHERE version = 25')).rowCount) {
+      await client.query(await readFile(new URL('../db/025-booking-email-confirmations.sql', import.meta.url), 'utf8'));
+      await client.query('INSERT INTO schema_migrations (version) VALUES (25)');
+    }
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');

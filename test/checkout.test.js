@@ -38,6 +38,7 @@ function fixture({ distanceProvider = async () => 29400, paymentProvider, catalo
     async createCheckoutBooking(body, quote, key, hash) {
       const booking = { id: randomUUID(), booking_number: 'BK20261003001', status: 'PENDING_PAYMENT',
         request_hash: hash, customer_email: body.customer.email, total_amount_minor: Math.round(quote.total_amount * 100),
+        card_surcharge_minor: Math.round((quote.card_surcharge_amount ?? 0) * 100),
         currency: quote.currency, quote_snapshot: quote, checkout_expires_at: new Date(Date.now() + 3600000),
         stripe_session_id: null, stripe_checkout_url: null };
       bookings.set(key, booking);
@@ -58,7 +59,8 @@ test('checkout recalculates fare, saves a snapshot and returns a Stripe URL on b
   for (const prefix of ['/api', '/api/v1']) {
     const { body, headers } = await request(f.app).post(`${prefix}/bookings/checkout`).send(input).expect(200);
     assert.deepEqual(body, { success: true, booking_id: 'BK20261003001', payment_status: 'PENDING',
-      amount: 145, currency: 'SGD', stripe_checkout_url: 'https://checkout.stripe.com/test' });
+      amount: 159.5, subtotal_amount: 145, card_surcharge_amount: 14.5, card_surcharge_percent: 10,
+      currency: 'SGD', stripe_checkout_url: 'https://checkout.stripe.com/test' });
     assert.equal(headers['cache-control'], 'no-store');
     assert.ok(headers['idempotency-key']);
     assert.equal(Object.hasOwn(body, 'customer'), false);
@@ -143,7 +145,7 @@ test('Stripe SDK receives the stored total and a stable session idempotency key'
       assert.equal(params.client_reference_id, booking.id);
       assert.equal(params.mode, 'payment');
       assert.deepEqual(params.invoice_creation, { enabled: false });
-      assert.deepEqual(params.payment_method_types, ['card', 'paynow']);
+      assert.deepEqual(params.payment_method_types, ['card']);
       assert.deepEqual(params.adaptive_pricing, { enabled: false });
       assert.deepEqual(params.automatic_tax, { enabled: false });
       assert.equal(params.allow_promotion_codes, false);

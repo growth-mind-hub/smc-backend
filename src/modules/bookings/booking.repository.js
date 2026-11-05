@@ -7,6 +7,12 @@ const supportedEvents = ['checkout.session.completed', 'checkout.session.async_p
 export function bookingRepository(pool, transaction) {
   const getByKey = async (key, client = pool) => (await client.query('SELECT * FROM bookings WHERE idempotency_key = $1', [key])).rows[0] ?? null;
   return {
+    claimEmailConfirmation: async id => (await pool.query(`INSERT INTO booking_email_confirmations (booking_id)
+      VALUES ($1) ON CONFLICT (booking_id) DO NOTHING RETURNING booking_id`, [id])).rowCount === 1,
+    getEmailConfirmation: async id => (await pool.query(
+      'SELECT status, message_id FROM booking_email_confirmations WHERE booking_id = $1', [id])).rows[0] ?? null,
+    finishEmailConfirmation: async (id, status, messageId) => pool.query(`UPDATE booking_email_confirmations
+      SET status = $2, message_id = $3, updated_at = CURRENT_TIMESTAMP WHERE booking_id = $1`, [id, status, messageId]),
     claimWhatsappConfirmation: async id => (await pool.query(`INSERT INTO booking_whatsapp_confirmations (booking_id)
       VALUES ($1) ON CONFLICT (booking_id) DO NOTHING RETURNING booking_id`, [id])).rowCount === 1,
     getWhatsappConfirmation: async id => (await pool.query(
@@ -38,8 +44,8 @@ export function bookingRepository(pool, transaction) {
         (id, idempotency_key, request_hash, customer_name, customer_email, customer_phone,
         vehicle_id, service_id, catalog_id, pickup_address, drop_address, distance_meters, hours,
         vehicle_amount_minor, distance_amount_minor, add_on_amount_minor, total_amount_minor, currency, quote_snapshot,
-        payment_method, booking_status, driver_name, driver_phone)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23)
+        payment_method, booking_status, driver_name, driver_phone, card_surcharge_minor)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
         ON CONFLICT (idempotency_key) DO NOTHING RETURNING *`,
       [randomUUID(), key, requestHash, input.customer.name, input.customer.email, input.customer.phone,
         input.vehicle_id, input.service_id, quote.catalog_id, input.pickup.address, input.drop.address,
@@ -47,7 +53,8 @@ export function bookingRepository(pool, transaction) {
         Math.round(quote.vehicle_amount * 100), Math.round(quote.distance_amount * 100), Math.round(quote.add_on_amount * 100),
         Math.round(quote.total_amount * 100), quote.currency, JSON.stringify(quote),
         manual ? 'MANUAL' : 'STRIPE', manual ? 'CONFIRMED' : 'NEW',
-        manual ? input.driver_name ?? '' : '', manual ? input.driver_phone ?? '' : '']);
+        manual ? input.driver_name ?? '' : '', manual ? input.driver_phone ?? '' : '',
+        manual ? 0 : Math.round((quote.card_surcharge_amount ?? 0) * 100)]);
       const booking = rows[0] ?? await getByKey(key, client);
       if (booking.request_hash !== requestHash) { throw failure('IDEMPOTENCY_CONFLICT', 'Idempotency-Key was already used for different booking details.'); }
       if (rows.length) {

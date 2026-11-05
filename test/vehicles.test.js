@@ -205,6 +205,10 @@ integration('checkout saves immutable snapshots, concurrent retries create one b
   const hash = createHash('sha256').update(JSON.stringify(input)).digest('hex');
   const [first, second] = await Promise.all([store.createCheckoutBooking(input, quote, key, hash), store.createCheckoutBooking(input, quote, key, hash)]);
   assert.equal(first.id, second.id);
+  const emailClaims = await Promise.all([store.claimEmailConfirmation(first.id), store.claimEmailConfirmation(first.id)]);
+  assert.equal(emailClaims.filter(Boolean).length, 1);
+  await store.finishEmailConfirmation(first.id, 'ACCEPTED', 'email-integration');
+  assert.deepEqual(await store.getEmailConfirmation(first.id), { status: 'ACCEPTED', message_id: 'email-integration' });
   const notificationClaims = await Promise.all([
     store.claimWhatsappConfirmation(first.id), store.claimWhatsappConfirmation(first.id),
   ]);

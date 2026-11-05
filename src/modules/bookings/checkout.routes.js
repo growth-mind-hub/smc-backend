@@ -3,12 +3,16 @@ import { createHash, randomUUID } from 'node:crypto';
 import { sendError } from '../../middleware/errors.js';
 import { validateCheckout, normalizeCheckout } from './checkout.validation.js';
 import { calculateQuote, applyDistancePricing } from '../add-ons/quote.js';
+import { applyCardSurcharge } from './card-surcharge.js';
 
 const failure = (code, message) => Object.assign(new Error(message), { code });
 const checkoutResponse = booking => ({ success: true,
   booking_id: booking.booking_number,
   payment_status: booking.status === 'PENDING_PAYMENT' ? 'PENDING' : booking.status,
   amount: Number(booking.total_amount_minor) / 100, currency: booking.currency,
+  subtotal_amount: (Number(booking.total_amount_minor) - Number(booking.card_surcharge_minor ?? 0)) / 100,
+  card_surcharge_amount: Number(booking.card_surcharge_minor ?? 0) / 100,
+  card_surcharge_percent: booking.quote_snapshot?.card_surcharge_percent ?? 0,
   stripe_checkout_url: booking.stripe_checkout_url });
 
 export function checkoutRoutes({ vehicleStore: store, distanceProvider, paymentProvider, logger = console }) {
@@ -32,7 +36,7 @@ export function checkoutRoutes({ vehicleStore: store, distanceProvider, paymentP
         const distanceMeters = await distanceProvider(input.pickup, input.drop);
         const result = applyDistancePricing(input, baseQuote, catalog.distance_rules, distanceMeters);
         if (result.quote_status === 'CONTACT_SUPPORT') { return res.json(result); }
-        const quote = result.quote;
+        const quote = applyCardSurcharge(result.quote);
         const totalMinor = Math.round(quote.total_amount * 100);
         if (quote.currency !== 'SGD' || !Number.isSafeInteger(totalMinor) || totalMinor < 50 || totalMinor > 99999999) {
           throw failure('CHECKOUT_NOT_SUPPORTED', 'Checkout requires an SGD total between 0.50 and 999999.99.');

@@ -30,7 +30,11 @@ Use the listener's signing secret for local verification. Hosted endpoints use t
 
 ## Payment methods
 
-New Checkout sessions explicitly allow only `card` and `paynow`. Apple Pay is a card wallet, so it is not a separate entry in `payment_method_types`; Stripe displays it on eligible devices/browsers with a configured wallet. Enable Apple Pay and PayNow in Stripe Dashboard payment method settings and disable Google Pay there to keep the displayed choices limited to card, PayNow and eligible Apple Pay. Google Pay is also a card wallet and is not excluded by the `card`/`paynow` list alone. Existing saved sessions retain their original payment methods; create a new checkout attempt after deployment to verify the change.
+New card checkouts add a 10% surcharge to the full booking subtotal (vehicle, distance and add-ons), rounded to the nearest cent. For example, SGD 100.00 becomes SGD 110.00. `amount` is the final amount charged; checkout responses also include `subtotal_amount`, `card_surcharge_amount` and `card_surcharge_percent`. Stripe shows the surcharge as a separate line item. The quote endpoint still returns the fare before the card surcharge; the app should disclose the fee before checkout and display the checkout response's final total. Manual bookings have no card surcharge. Existing saved bookings/retries retain their original totals and surcharge, including zero for legacy bookings. The final total must remain within existing checkout limits.
+
+Apply migration 024 before deploying this change. It adds `bookings.card_surcharge_minor` (zero for existing bookings) and updates the total breakdown constraint. Payment verification continues to require Stripe's total to match the persisted final booking total.
+
+New Checkout sessions explicitly allow only `card`; PayNow and other non-card payment methods are not offered. Apple Pay and Google Pay are card wallets and may still appear when enabled and eligible. To display only manual card entry, disable those wallets in Stripe Dashboard payment method settings. Existing saved sessions retain their original payment methods; create a new checkout attempt after deployment to verify the change.
 
 ## Invoice creation
 

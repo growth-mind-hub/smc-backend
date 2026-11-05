@@ -53,10 +53,12 @@ curl -X POST "$BASE_URL/api/v1/bookings/checkout" \
 200 example:
 
 ```json
-{"success":true,"booking_id":"BK20261021001","payment_status":"PENDING","amount":80,"currency":"SGD","stripe_checkout_url":"https://checkout.stripe.com/..."}
+{"success":true,"booking_id":"BK20261021001","payment_status":"PENDING","amount":88,"subtotal_amount":80,"card_surcharge_amount":8,"card_surcharge_percent":10,"currency":"SGD","stripe_checkout_url":"https://checkout.stripe.com/..."}
 ```
 
 Redirect the customer to `stripe_checkout_url`. The server calculates the amount; do not send prices. Hourly services require `hours`, for example `"hours":8`. IDs are examples: get actual services from GET `/api/v1/services` and vehicles from GET `/api/v1/vehicles`.
+
+New card checkouts add 10% to the full fare, including distance and add-ons, rounded to cents. Disclose the surcharge before checkout. The quote endpoint returns the pre-surcharge fare; checkout `amount` is the final payable total. Existing booking retries preserve their original totals. Manual bookings have no card surcharge. Apply migration 024 before deployment.
 
 ## Manual booking from admin
 
@@ -261,3 +263,7 @@ POST `/api/v1/bookings/:id/whatsapp-confirmation` (also under `/api`). Requires 
 Returns 202 with `status: ACCEPTED` and `message_id` when Meta accepts the message; this does not confirm delivery. Repeat calls return the original message ID without sending again. Uncertain sends require operator review before any resend. The API is explicitly triggered; Stripe payment events do not automatically send WhatsApp messages. No Meta delivery webhook is included.
 
 See [WhatsApp integration and setup](whatsapp-api.md) for required server environment variables, template order, responses and recovery limitations.
+
+## Send booking details by email
+
+POST `/api/v1/bookings/:id/email-confirmation` (also `/api`), with admin bearer authentication, Content-Type application/json and body `{}`. Sends booking details from the Hostinger booking mailbox to the stored customer email. Eligible bookings are PAID, or CONFIRMED manual bookings, and not CANCELLED. Returns 202 ACCEPTED with message_id, or 200 with duplicate: true for an already accepted send. SMTP acceptance does not guarantee inbox delivery. Uncertain sends require review before any resend. Configure SMTP credentials and apply migration 025. See [email setup and API](booking-email-api.md).
