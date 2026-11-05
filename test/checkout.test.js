@@ -145,7 +145,8 @@ test('Stripe SDK receives the stored total and a stable session idempotency key'
       assert.equal(params.client_reference_id, booking.id);
       assert.equal(params.mode, 'payment');
       assert.deepEqual(params.invoice_creation, { enabled: false });
-      assert.deepEqual(params.payment_method_types, ['card']);
+      assert.deepEqual(params.allowed_payment_method_types, ['card']);
+      assert.equal(Object.hasOwn(params, 'payment_method_types'), false);
       assert.deepEqual(params.adaptive_pricing, { enabled: false });
       assert.deepEqual(params.automatic_tax, { enabled: false });
       assert.equal(params.allow_promotion_codes, false);

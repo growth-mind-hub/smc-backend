@@ -28,7 +28,7 @@ export function stripePaymentProvider({ secretKey = process.env.STRIPE_SECRET_KE
         session = await stripe.checkout.sessions.create({
           // Card wallets can still appear when enabled in Stripe Dashboard.
           mode: 'payment',
-          payment_method_types: ['card'],
+          allowed_payment_method_types: ['card'],
           invoice_creation: { enabled: false },
           adaptive_pricing: { enabled: false }, automatic_tax: { enabled: false }, allow_promotion_codes: false,
           client_reference_id: booking.id, customer_email: booking.customer_email,

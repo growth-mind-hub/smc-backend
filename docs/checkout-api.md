@@ -30,6 +30,8 @@ Use the listener's signing secret for local verification. Hosted endpoints use t
 
 ## Payment methods
 
+The Stripe SDK uses API version 2026-09-30.endive, which no longer accepts `payment_method_types` in create requests. Card-only sessions use `allowed_payment_method_types: ['card']` instead. See [Stripe migration guidance](https://support.stripe.com/questions/fix-the-payment-method-types-error).
+
 New card checkouts add a 10% surcharge to the full booking subtotal (vehicle, distance and add-ons), rounded to the nearest cent. For example, SGD 100.00 becomes SGD 110.00. `amount` is the final amount charged; checkout responses also include `subtotal_amount`, `card_surcharge_amount` and `card_surcharge_percent`. Stripe shows the surcharge as a separate line item. The quote endpoint still returns the fare before the card surcharge; the app should disclose the fee before checkout and display the checkout response's final total. Manual bookings have no card surcharge. Existing saved bookings/retries retain their original totals and surcharge, including zero for legacy bookings. The final total must remain within existing checkout limits.
 
 Apply migration 024 before deploying this change. It adds `bookings.card_surcharge_minor` (zero for existing bookings) and updates the total breakdown constraint. Payment verification continues to require Stripe's total to match the persisted final booking total.
