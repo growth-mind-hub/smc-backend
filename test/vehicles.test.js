@@ -245,7 +245,8 @@ integration('checkout saves immutable snapshots, concurrent retries create one b
   await assert.rejects(store.applyStripeEvent({ ...event, id: 'evt_wrong_number_' + first.id,
     data: { object: { ...event.data.object, metadata: { booking_id: 'BK_WRONG', booking_uuid: first.id } } } }), { code: 'PAYMENT_MISMATCH' });
   assert.equal((await store.applyStripeEvent(event)).status, 'PAID');
-  assert.deepEqual(await store.applyStripeEvent(event), { duplicate: true });
+  assert.deepEqual(await store.applyStripeEvent(event), { duplicate: true, status: 'PAID', booking_id: first.id });
+  assert.equal((await store.getBooking(first.id)).booking_status, 'CONFIRMED');
   await store.applyStripeEvent({ id: 'evt_expired_' + first.id, type: 'checkout.session.expired', data: { object: sessionObject } });
   const paid = await store.getCheckoutByKey(key);
   assert.equal(paid.status, 'PAID');

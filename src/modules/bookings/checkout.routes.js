@@ -4,6 +4,7 @@ import { sendError } from '../../middleware/errors.js';
 import { validateCheckout, normalizeCheckout } from './checkout.validation.js';
 import { calculateQuote, applyDistancePricing } from '../add-ons/quote.js';
 import { applyCardSurcharge } from './card-surcharge.js';
+import { sendPaidBookingEmail } from './booking-email.js';
 
 const failure = (code, message) => Object.assign(new Error(message), { code });
 const checkoutResponse = booking => ({ success: true,
@@ -69,12 +70,19 @@ export function checkoutRoutes({ vehicleStore: store, distanceProvider, paymentP
   return router;
 }
 
-export function stripeWebhook({ vehicleStore: store, paymentProvider }) {
+export function stripeWebhook({ vehicleStore: store, paymentProvider, mailer, logger = console }) {
   return async (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');
     try {
       const event = paymentProvider.verifyWebhook(req.body, req.get('Stripe-Signature'));
-      await store.applyStripeEvent(event);
+      const result = await store.applyStripeEvent(event);
+      if (result?.status === 'PAID' && result.booking_id &&
+        ['checkout.session.completed', 'checkout.session.async_payment_succeeded'].includes(event.type) &&
+        event.data?.object?.payment_status === 'paid') {
+        const email = await sendPaidBookingEmail(store, mailer, result.booking_id);
+        logger.info(JSON.stringify({ event: 'paid_booking_email', requestId: req.requestId,
+          status: email.status ?? 'SKIPPED', duplicate: email.duplicate ?? false }));
+      }
       return res.json({ received: true });
     } catch (err) {
       if (err.code === 'INVALID_SIGNATURE') { return sendError(req, res, 400, err.code, err.message); }

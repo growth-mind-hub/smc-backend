@@ -96,19 +96,20 @@ export function bookingRepository(pool, transaction) {
       }
       const receipt = await client.query(`INSERT INTO stripe_webhook_events (id, booking_id, event_type)
         VALUES ($1, $2, $3) ON CONFLICT (id) DO NOTHING`, [event.id, id, event.type]);
-      if (!receipt.rowCount) { return { duplicate: true }; }
+      if (!receipt.rowCount) { return { duplicate: true, status: booking.status, booking_id: booking.id }; }
       let status = booking.status;
       if (['checkout.session.completed', 'checkout.session.async_payment_succeeded'].includes(event.type) && session.payment_status === 'paid') { status = 'PAID'; }
       else if (booking.status === 'PENDING_PAYMENT' && event.type === 'checkout.session.expired') { status = 'PAYMENT_EXPIRED'; }
       else if (booking.status === 'PENDING_PAYMENT' && event.type === 'checkout.session.async_payment_failed') { status = 'PAYMENT_FAILED'; }
       // A paid booking cannot be downgraded by delayed or replayed events.
       await client.query(`UPDATE bookings SET status = $2, stripe_session_id = $3, stripe_livemode = $4,
+        booking_status = CASE WHEN $2 = 'PAID' AND booking_status = 'NEW' THEN 'CONFIRMED' ELSE booking_status END,
         stripe_payment_intent_id = COALESCE($5, stripe_payment_intent_id),
         paid_at = CASE WHEN $2 = 'PAID' THEN COALESCE(paid_at, CURRENT_TIMESTAMP) ELSE paid_at END
         WHERE id = $1`,
       [id, status, session.id, session.livemode,
         typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id ?? null]);
-      return { status };
+      return { status, booking_id: booking.id };
     }),
   };
 }

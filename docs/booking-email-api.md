@@ -32,4 +32,12 @@ Returns 202 `{ "success": true, "status": "ACCEPTED", "message_id": "..." }` whe
 
 400 INVALID_INPUT: invalid request ID/body/customer email. 401 UNAUTHORIZED: missing/invalid admin credentials. 404 NOT_FOUND: missing booking. 409 BOOKING_NOT_CONFIRMED: ineligible booking. 409 EMAIL_SEND_UNCERTAIN: previous send pending/unknown. 502 EMAIL_SEND_UNCERTAIN: SMTP acceptance could not be confirmed.
 
-Unknown and pending sends require operator investigation using Hostinger mail logs before resetting any record or resending: SMTP may already have accepted a message before a timeout/crash. No automatic retries, delivery/bounce tracking, resend endpoint or automatic Stripe-triggered sending are included in this admin-triggered API.
+Unknown and pending sends require operator investigation using Hostinger mail logs before resetting any record or resending: SMTP may already have accepted a message before a timeout/crash. No automatic retries of uncertain sends, delivery/bounce tracking or resend endpoint are included.
+
+## Automatic confirmation after Stripe payment
+
+Verified `checkout.session.completed` and `checkout.session.async_payment_succeeded` events with `payment_status: paid` trigger the same deduplicated email after the booking transaction commits. NEW bookings become CONFIRMED when paid; other operational statuses are preserved. Unpaid, expired, failed, mismatched and cancelled bookings do not trigger confirmation email. Admin and automatic triggers share the same email record, so clicking the admin button after automatic acceptance does not send another email. Email status does not change payment success.
+
+Migration 028 removes the booking `pax` and `luggage` columns introduced by migration 027. Checkout and manual booking requests no longer accept those fields. Emails include customer name, fleet and final price including the card surcharge. Fleet capacity fields and recommendation query parameters are unaffected.
+
+SMTP is called after the paid transaction; a configuration/read/claim failure returns an error to Stripe so it can retry the event. Duplicate paid events can retry the notification without reapplying payment. Once a send is claimed, timeouts/crashes or uncertain outcomes leave PENDING/UNKNOWN for operator review rather than risking duplicate mail. An UNKNOWN attempt is logged as `paid_booking_email` without customer details and the webhook is acknowledged. There is no background outbox worker: monitor these logs and reconcile uncertain attempts through Hostinger logs. Ensure SMTP credentials are configured before enabling payment traffic.

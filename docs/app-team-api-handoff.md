@@ -267,3 +267,13 @@ See [WhatsApp integration and setup](whatsapp-api.md) for required server enviro
 ## Send booking details by email
 
 POST `/api/v1/bookings/:id/email-confirmation` (also `/api`), with admin bearer authentication, Content-Type application/json and body `{}`. Sends booking details from the Hostinger booking mailbox to the stored customer email. Eligible bookings are PAID, or CONFIRMED manual bookings, and not CANCELLED. Returns 202 ACCEPTED with message_id, or 200 with duplicate: true for an already accepted send. SMTP acceptance does not guarantee inbox delivery. Uncertain sends require review before any resend. Configure SMTP credentials and apply migration 025. See [email setup and API](booking-email-api.md).
+
+## Automatic email after payment
+
+Verified successful Stripe payments automatically send the booking confirmation email. Migration 028 removes booking pax and luggage columns; checkout no longer accepts those fields. The quote endpoint is unchanged. Paid NEW bookings become CONFIRMED. Existing email-send records prevent admin clicks or repeated Stripe events from resending. Apply migrations through 028 and configure SMTP before deployment. Unknown or pending sends require operator review. See booking-email-api.md for delivery limitations.
+
+## Fleet recommendation preferences
+
+Apply migration 029 before deploying recommendation changes. Standard trips prefer E/S Class (up to 3 persons and 3 bags), V-Class (up to 7 and 7), then 13-seater minibuses (13 with no bags, or up to 9 with up to 9 bags). 19/23-seater coaches carry no bags; the 40-seater supports 40 without bags or 30 with up to 40 bags. Inactive vehicles are never recommended. Other standard vehicles remain fallback candidates with their existing capacities.
+
+For wheelchair transport, call GET `/api/v1/vehicles/recommend?persons=3&luggage=0&wheelchair=true`. Persons means accompanying passengers, plus one wheelchair user: 7-seater wheelchair max 3 accompanying passengers; 9-seater max 5. Wheelchair vehicles are excluded unless explicitly requested. Wheelchair luggage capacity is unconfirmed; positive bag requests cannot recommend those vehicles. These rules affect recommendations, not quote or checkout input fields. See homepage-api.md.

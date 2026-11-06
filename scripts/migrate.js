@@ -114,6 +114,18 @@ export async function migrate(pool) {
       await client.query(await readFile(new URL('../db/026-whatsapp-webhooks.sql', import.meta.url), 'utf8'));
       await client.query('INSERT INTO schema_migrations (version) VALUES (26)');
     }
+    if (!(await client.query('SELECT version FROM schema_migrations WHERE version = 27')).rowCount) {
+      await client.query(await readFile(new URL('../db/027-booking-passenger-counts.sql', import.meta.url), 'utf8'));
+      await client.query('INSERT INTO schema_migrations (version) VALUES (27)');
+    }
+    if (!(await client.query('SELECT version FROM schema_migrations WHERE version = 28')).rowCount) {
+      await client.query(await readFile(new URL('../db/028-remove-booking-passenger-counts.sql', import.meta.url), 'utf8'));
+      await client.query('INSERT INTO schema_migrations (version) VALUES (28)');
+    }
+    if (!(await client.query('SELECT version FROM schema_migrations WHERE version = 29')).rowCount) {
+      await client.query(await readFile(new URL('../db/029-fleet-recommendation-policy.sql', import.meta.url), 'utf8'));
+      await client.query('INSERT INTO schema_migrations (version) VALUES (29)');
+    }
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');

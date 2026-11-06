@@ -12,6 +12,8 @@ function mapRows(rows) {
     if (!vehicles.has(row.id)) {vehicles.set(row.id, {
       id: row.id, name: row.name, description: row.description,
       passengerCapacity: row.passenger_capacity, currency: null,
+      passengerCapacityWithLuggage: row.passenger_capacity_with_luggage,
+      wheelchairCapacity: row.wheelchair_capacity, recommendationPriority: row.recommendation_priority,
       vehicleTypeId: row.vehicle_type_id, vehicleType: row.vehicle_type_name, imageUrl: row.image_url, status: row.status, updatedAt: row.updated_at.toISOString(),
       luggageCapacity: row.luggage_capacity, isActive: row.status === 'active',
       createdAt: row.created_at.toISOString(), prices: {},

@@ -25,10 +25,28 @@ export function bookingEmailContent(booking) {
   }
   return {
     subject: `Booking confirmation - ${String(booking.booking_number).replace(/[\r\n]/g, '')}`,
-    text: `Thank you for booking with Singapore Maxicabs.\n\n${details.map(([label, value]) => `${label}: ${value}`).join('\n')}\n\nFor assistance, reply to this email.`,
+    text: `Thank you for booking with Singapore Maxicabs.\n\n${details.map(([label, value]) => `${label}: ${value}`).join('\n')}\n\nNeed help? Contact support: booking@singaporemaxicabs.com.sg or call +65 8800 6006. You can also reply to this email.`,
     html: `<h2>Singapore Maxicabs — Booking confirmation</h2><p>Thank you for your booking.</p><table>${details.map(([label, value]) =>
-      `<tr><th scope="row" style="text-align:left;padding:6px">${escapeHtml(label)}</th><td style="padding:6px">${escapeHtml(value)}</td></tr>`).join('')}</table><p>For assistance, reply to this email.</p>`,
+      `<tr><th scope="row" style="text-align:left;padding:6px">${escapeHtml(label)}</th><td style="padding:6px">${escapeHtml(value)}</td></tr>`).join('')}</table><hr style="border:0;border-top:1px solid #ddd;margin:24px 0"><p>Need help with your booking?</p><p><a href="mailto:booking@singaporemaxicabs.com.sg" style="display:inline-block;background:#174a73;color:#fff;padding:12px 20px;text-decoration:none;border-radius:4px">Contact support</a></p><p><a href="mailto:booking@singaporemaxicabs.com.sg">booking@singaporemaxicabs.com.sg</a><br>Call: <a href="tel:+6588006006">+65 8800 6006</a><br>You can also reply to this email.</p>`,
   };
+}
+
+export async function sendPaidBookingEmail(store, mailer, id) {
+  const booking = await store.getBooking(id);
+  if (!booking || booking.status !== 'PAID' || booking.booking_status === 'CANCELLED') { return { skipped: true }; }
+  mailer.assertReady();
+  if (!await store.claimEmailConfirmation(booking.id)) {
+    const existing = await store.getEmailConfirmation(booking.id);
+    return { status: existing?.status ?? 'UNKNOWN', duplicate: true };
+  }
+  try {
+    const messageId = await mailer.sendConfirmation(booking);
+    await store.finishEmailConfirmation(booking.id, 'ACCEPTED', messageId);
+    return { status: 'ACCEPTED' };
+  } catch {
+    await store.finishEmailConfirmation(booking.id, 'UNKNOWN', null);
+    return { status: 'UNKNOWN' };
+  }
 }
 
 export function bookingMailer({ host = process.env.SMTP_HOST ?? 'smtp.hostinger.com',
