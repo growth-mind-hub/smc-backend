@@ -126,6 +126,22 @@ export async function migrate(pool) {
       await client.query(await readFile(new URL('../db/029-fleet-recommendation-policy.sql', import.meta.url), 'utf8'));
       await client.query('INSERT INTO schema_migrations (version) VALUES (29)');
     }
+    if (!(await client.query('SELECT version FROM schema_migrations WHERE version = 30')).rowCount) {
+      await client.query(await readFile(new URL('../db/030-smc-booking-prefix.sql', import.meta.url), 'utf8'));
+      await client.query('INSERT INTO schema_migrations (version) VALUES (30)');
+    }
+    if (!(await client.query('SELECT version FROM schema_migrations WHERE version = 31')).rowCount) {
+      await client.query(await readFile(new URL('../db/031-arrival-driveway-pickup.sql', import.meta.url), 'utf8'));
+      await client.query('INSERT INTO schema_migrations (version) VALUES (31)');
+    }
+    if (!(await client.query('SELECT version FROM schema_migrations WHERE version = 32')).rowCount) {
+      await client.query(await readFile(new URL('../db/032-paynow-bookings.sql', import.meta.url), 'utf8'));
+      await client.query('INSERT INTO schema_migrations (version) VALUES (32)');
+    }
+    if (!(await client.query('SELECT version FROM schema_migrations WHERE version = 33')).rowCount) {
+      await client.query(await readFile(new URL('../db/033-alphard-recommendation-limits.sql', import.meta.url), 'utf8'));
+      await client.query('INSERT INTO schema_migrations (version) VALUES (33)');
+    }
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');

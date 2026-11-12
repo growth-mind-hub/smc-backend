@@ -102,3 +102,15 @@ Attempts expire after one hour. If no session was saved and less than 30 minutes
 Webhook updates require a valid signature, matching booking UUID/client reference, session ID (once known), currency, live/test mode (once known), and total. Completed sessions with `payment_status: unpaid` stay pending. Paid sessions become `PAID`; expiration changes pending bookings to `PAYMENT_EXPIRED`; async failure changes them to `PAYMENT_FAILED`. Event IDs are processed once. Delayed events cannot downgrade paid bookings. Unknown unrelated events are acknowledged and ignored. Mismatched payments leave bookings unchanged and return an error. See [Stripe Checkout fulfillment](https://docs.stripe.com/checkout/fulfillment).
 
 Checkout responses use `Cache-Control: no-store`. There is no public customer/booking lookup endpoint. Status is stored in PostgreSQL; an authenticated status endpoint is a separate feature.
+
+## Direct PayNow booking (no Stripe)
+
+POST `/api/v1/bookings/checkout` with the normal checkout payload and `"payment_method":"paynow"` (uppercase PAYNOW is also accepted). The backend calculates the fare and saves a booking with payment_method PAYNOW and status PENDING_PAYMENT. It does not require Stripe credentials, create a Stripe session, generate a QR code, collect payment or apply the 10% card surcharge. The response uses the existing shape, with payment_status PENDING and stripe_checkout_url null. Contact-support rules still return CONTACT_SUPPORT without saving a booking.
+
+Identical retries with the same Idempotency-Key return the existing booking; changed input returns 409. PayNow bookings are not subject to Stripe session expiry checks. Stripe events cannot mark these bookings paid. Payment reconciliation/marking paid remains a separate workflow; automatic paid-confirmation emails are not sent just by creating this pending booking. The admin manual-booking endpoint remains unchanged.
+
+Apply migration 032 before using PAYNOW bookings. Example response for an SGD 80 fare:
+
+```json
+{"success":true,"booking_id":"SMC20261111001","payment_status":"PENDING","amount":80,"currency":"SGD","subtotal_amount":80,"card_surcharge_amount":0,"card_surcharge_percent":0,"stripe_checkout_url":null}
+```

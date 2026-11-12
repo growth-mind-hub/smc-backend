@@ -53,11 +53,12 @@ test('uncertain SMTP outcomes are not automatically retried', async () => {
   assert.equal(f.sends(), 1);
 });
 
-test('email body escapes stored HTML and includes payment status and surcharge', () => {
+test('email body escapes stored HTML and shows the final total without a surcharge line', () => {
   const content = bookingEmailContent(booking);
   assert.ok(!content.html.includes('<script>'));
   assert.ok(content.html.includes('&lt;script&gt;'));
-  assert.ok(content.text.includes('Card surcharge: SGD 10.00'));
+  assert.doesNotMatch(content.text, /card surcharge/i);
+  assert.doesNotMatch(content.html, /card surcharge/i);
   assert.ok(content.text.includes('Total booking amount: SGD 110.00'));
   assert.ok(content.text.includes('Payment status: PAID'));
 });

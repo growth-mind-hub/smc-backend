@@ -39,7 +39,7 @@ export function whatsappRoutes({ vehicleStore: store, adminApiKey, adminAuth, wh
   const router = Router();
   router.post('/bookings/:id/whatsapp-confirmation', requireAdmin(adminApiKey, adminAuth), async (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');
-    if (!/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|BK\d{11,})$/i.test(req.params.id) ||
+    if (!/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|(?:SMC|BK)\d{11,})$/i.test(req.params.id) ||
       !req.body || Array.isArray(req.body) || req.body.whatsapp_opt_in !== true ||
       Object.keys(req.body).some(key => key !== 'whatsapp_opt_in')) {
       return sendError(req, res, 400, 'INVALID_INPUT', 'Use a booking UUID or booking number and send {"whatsapp_opt_in":true} only after obtaining customer consent.');

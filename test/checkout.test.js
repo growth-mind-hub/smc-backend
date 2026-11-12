@@ -39,6 +39,7 @@ function fixture({ distanceProvider = async () => 29400, paymentProvider, catalo
       const booking = { id: randomUUID(), booking_number: 'BK20261003001', status: 'PENDING_PAYMENT',
         request_hash: hash, customer_email: body.customer.email, total_amount_minor: Math.round(quote.total_amount * 100),
         card_surcharge_minor: Math.round((quote.card_surcharge_amount ?? 0) * 100),
+        payment_method: body.payment_method,
         currency: quote.currency, quote_snapshot: quote, checkout_expires_at: new Date(Date.now() + 3600000),
         stripe_session_id: null, stripe_checkout_url: null };
       bookings.set(key, booking);
@@ -68,6 +69,38 @@ test('checkout recalculates fare, saves a snapshot and returns a Stripe URL on b
     assert.equal(saved.quote_snapshot.distance_amount, 5);
     assert.equal(saved.quote_snapshot.add_on_amount, 60);
   }
+});
+
+test('PayNow saves an unsurcharged pending booking without Stripe configuration or a session', async () => {
+  const f = fixture({ paymentProvider: {
+    assertCheckoutReady() { assert.fail('PayNow must not require Stripe configuration'); },
+    async createCheckout() { assert.fail('PayNow must not create a Stripe session'); },
+  } });
+  for (const prefix of ['/api', '/api/v1']) {
+    const key = randomUUID();
+    const send = body => request(f.app).post(`${prefix}/bookings/checkout`).set('Idempotency-Key', key).send(body);
+    const body = { ...input, payment_method: 'paynow' };
+    const first = await send(body).expect(200);
+    assert.equal(first.body.amount, 145);
+    assert.equal(first.body.card_surcharge_amount, 0);
+    assert.equal(first.body.card_surcharge_percent, 0);
+    assert.equal(first.body.payment_status, 'PENDING');
+    assert.equal(first.body.stripe_checkout_url, null);
+    const saved = f.bookings.get(key);
+    assert.equal(saved.payment_method, 'PAYNOW');
+    assert.equal(saved.stripe_session_id, null);
+    saved.checkout_expires_at = new Date(0);
+    const retry = await send({ ...body, payment_method: 'PAYNOW' }).expect(200);
+    assert.deepEqual(retry.body, first.body);
+    await send({ ...body, customer: { ...body.customer, name: 'Changed' } }).expect(409);
+  }
+});
+
+test('PayNow contact-support routes do not create a booking', async () => {
+  const f = fixture({ distanceProvider: async () => 40000 });
+  const { body } = await request(f.app).post('/api/v1/bookings/checkout').send({ ...input, payment_method: 'paynow' }).expect(200);
+  assert.equal(body.quote_status, 'CONTACT_SUPPORT');
+  assert.equal(f.bookings.size, 0);
 });
 
 test('checkout rejects frontend prices and invalid customer information before creating bookings', async () => {

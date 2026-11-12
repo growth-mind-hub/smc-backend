@@ -277,3 +277,7 @@ Verified successful Stripe payments automatically send the booking confirmation 
 Apply migration 029 before deploying recommendation changes. Standard trips prefer E/S Class (up to 3 persons and 3 bags), V-Class (up to 7 and 7), then 13-seater minibuses (13 with no bags, or up to 9 with up to 9 bags). 19/23-seater coaches carry no bags; the 40-seater supports 40 without bags or 30 with up to 40 bags. Inactive vehicles are never recommended. Other standard vehicles remain fallback candidates with their existing capacities.
 
 For wheelchair transport, call GET `/api/v1/vehicles/recommend?persons=3&luggage=0&wheelchair=true`. Persons means accompanying passengers, plus one wheelchair user: 7-seater wheelchair max 3 accompanying passengers; 9-seater max 5. Wheelchair vehicles are excluded unless explicitly requested. Wheelchair luggage capacity is unconfirmed; positive bag requests cannot recommend those vehicles. These rules affect recommendations, not quote or checkout input fields. See homepage-api.md.
+
+## Direct PayNow booking
+
+Use POST `/api/v1/bookings/checkout` with the existing checkout fields and `"payment_method":"paynow"`. It saves a PAYNOW booking with payment pending and returns stripe_checkout_url: null. No Stripe session, QR generation, payment collection or 10% card surcharge is involved. Reuse the Idempotency-Key only for identical retries. Apply migration 032. This does not verify receipt of payment or send a paid-booking email. Admin manual booking is unchanged. See checkout-api.md.

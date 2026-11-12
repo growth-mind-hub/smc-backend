@@ -6,7 +6,7 @@ export function validateCheckout(body, idempotencyKey) {
   if (!object(body)) { return ['A JSON object is required.']; }
   const { customer, payment_method: paymentMethod, ...quoteInput } = body;
   const errors = validateQuote(quoteInput);
-  if (paymentMethod !== 'STRIPE') { errors.push('payment_method must be STRIPE.'); }
+  if (!['STRIPE', 'paynow', 'PAYNOW'].includes(paymentMethod)) { errors.push('payment_method must be STRIPE or paynow.'); }
   if (!object(customer)) { errors.push('customer must contain name, email and phone.'); }
   else {
     for (const key of Object.keys(customer)) { if (!['name', 'email', 'phone'].includes(key)) { errors.push(`customer.${key} is not supported.`); } }
@@ -23,5 +23,6 @@ export function normalizeCheckout(body) {
     vehicle_id: body.vehicle_id, service_id: body.service_id,
     pickup: { address: body.pickup.address.trim() }, drop: { address: body.drop.address.trim() },
     add_ons: body.add_ons.map(item => ({ add_on_id: item.add_on_id, quantity: item.quantity })).sort((a, b) => a.add_on_id - b.add_on_id),
-    ...(body.hours !== undefined ? { hours: body.hours } : {}), payment_method: 'STRIPE' };
+    ...(body.hours !== undefined ? { hours: body.hours } : {}),
+    payment_method: ['paynow', 'PAYNOW'].includes(body.payment_method) ? 'PAYNOW' : 'STRIPE' };
 }

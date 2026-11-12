@@ -1,6 +1,6 @@
 # Booking details email (Hostinger SMTP)
 
-Nodemailer sends an HTML and plain-text booking confirmation from `booking@singaporemaxicabs.com.sg` to the stored booking customer email. It includes customer/route/vehicle/service details, booking and payment status, selected add-ons, fare breakdown, card surcharge, total, hours/distance and assigned driver details when available. Pickup date/time is not stored by the current booking API and is not invented in the email. This is a booking confirmation, not a tax invoice.
+Nodemailer sends an HTML and plain-text booking confirmation from `booking@singaporemaxicabs.com.sg` to the stored booking customer email. It includes customer/route/vehicle/service details, booking and payment status, selected add-ons, fare breakdown, total, hours/distance and assigned driver details when available. The card surcharge is omitted as a separate email line; the final total still includes it. Pickup date/time is not stored by the current booking API and is not invented in the email. This is a booking confirmation, not a tax invoice.
 
 ## Configuration
 

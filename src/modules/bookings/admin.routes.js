@@ -7,7 +7,7 @@ import { sendError } from '../../middleware/errors.js';
 
 const statuses = ['NEW', 'CONFIRMED', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'];
 const validId = value => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
-  || /^BK\d{11,}$/.test(value);
+  || /^(?:SMC|BK)\d{11,}$/.test(value);
 const invalid = (req, res, message) => sendError(req, res, 400, 'INVALID_INPUT', message);
 
 export function bookingAdminRoutes({ vehicleStore: store, adminApiKey, adminAuth, distanceProvider }) {

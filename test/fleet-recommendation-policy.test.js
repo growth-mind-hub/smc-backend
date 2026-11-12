@@ -8,7 +8,7 @@ const vehicle = (id, name, passengers, bags, withBags, priority, wheelchair = 0)
   prices: { arrival: { amount: 80 } },
 });
 const fleet = [vehicle(1, 'Mercedes E Class', 3, 3, 3, 10), vehicle(2, 'Mercedes S Class', 3, 3, 3, 10),
-  vehicle(3, 'Toyota Alphard / Vellfire', 6, 6, null, 100), vehicle(5, 'Mercedes V-Class (New)', 7, 7, 7, 20),
+  vehicle(3, 'Toyota Alphard / Vellfire', 6, 4, 4, 25), vehicle(5, 'Mercedes V-Class (New)', 7, 7, 7, 20),
   vehicle(6, 'Toyota Hiace 13 seater Minibus', 13, 9, 9, 30),
   vehicle(8, '7 Seater Maxi Cab Wheelchair', 3, null, 3, 10, 1),
   vehicle(11, '9 Seater Maxi Cab Wheelchair', 5, null, 5, 20, 1),
@@ -23,6 +23,17 @@ test('sedans fit up to three passengers and bags, then V-Class is preferred', ()
   assert.equal(best(4, 1), 5);
   assert.equal(best(7, 7), 5);
 });
+test('Alphard fits six without bags or four with four bags while V-Class remains preferred', () => {
+  assert.equal(best(4, 4), 5);
+  assert.equal(best(6, 0), 5);
+  const withoutVClass = fleet.filter(v => v.id !== 5);
+  assert.equal(best(6, 0, false, withoutVClass), 3);
+  assert.equal(best(4, 4, false, withoutVClass), 3);
+  assert.equal(best(5, 1, false, withoutVClass), 6);
+  assert.equal(best(4, 5, false, withoutVClass), 6);
+  assert.equal(best(7, 0, false, withoutVClass), 6);
+});
+
 test('13-seater supports thirteen without luggage or nine passengers with nine bags', () => {
   assert.equal(best(8, 7), 6);
   assert.equal(best(7, 8), 6);

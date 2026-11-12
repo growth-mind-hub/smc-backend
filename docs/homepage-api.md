@@ -12,6 +12,7 @@ Apply migration 029 before deploying the new recommendation code. It sets the op
 | --- | --- | --- | --- | --- |
 | E/S Class | 3 | 3 | 3 | First |
 | Mercedes V-Class (New) | 7 | 7 | 7 | Second |
+| Toyota Alphard / Vellfire | 6 | 4 | 4 | Fallback after V-Class, before minibuses |
 | 13-seater minibus / VIP Executive | 13 | 9 | 9 | Third |
 | 19/23-seater coaches | 19/23 | Not eligible | 0 | Fourth |
 | 40-seater coach | 40 | 30 | 40 | Fifth |

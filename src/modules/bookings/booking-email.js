@@ -16,7 +16,7 @@ export function bookingEmailContent(booking) {
     ['Pickup', booking.pickup_address], ['Drop-off', booking.drop_address],
     ['Hours', booking.hours], ['Distance', booking.distance_meters == null ? null : `${booking.distance_meters / 1000} km`],
     ['Vehicle fare', money(booking.vehicle_amount_minor)], ['Distance charge', money(booking.distance_amount_minor)],
-    ['Add-ons', money(booking.add_on_amount_minor)], ['Card surcharge', money(booking.card_surcharge_minor)],
+    ['Add-ons', money(booking.add_on_amount_minor)],
     ['Total booking amount', money(booking.total_amount_minor)],
     ['Driver', booking.driver_name], ['Driver phone', booking.driver_phone],
   ].filter(([, value]) => value !== undefined && value !== null && value !== '');
@@ -77,7 +77,7 @@ export function bookingEmailRoutes({ vehicleStore: store, adminApiKey, adminAuth
   const router = Router();
   router.post('/bookings/:id/email-confirmation', requireAdmin(adminApiKey, adminAuth), async (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');
-    if (!/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|BK\d{11,})$/i.test(req.params.id) ||
+    if (!/^(?:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|(?:SMC|BK)\d{11,})$/i.test(req.params.id) ||
       !req.body || Array.isArray(req.body) || Object.keys(req.body).length) {
       return sendError(req, res, 400, 'INVALID_INPUT', 'Use a booking UUID or booking number and an empty JSON object.');
     }

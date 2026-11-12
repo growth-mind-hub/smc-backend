@@ -215,7 +215,7 @@ integration('checkout saves immutable snapshots, concurrent retries create one b
   assert.equal(notificationClaims.filter(Boolean).length, 1);
   await store.finishWhatsappConfirmation(first.id, 'ACCEPTED', 'wamid.integration');
   assert.deepEqual(await store.getWhatsappConfirmation(first.id), { status: 'ACCEPTED', message_id: 'wamid.integration' });
-  assert.match(first.booking_number, /^BK\d{8}\d{3,}$/);
+  assert.match(first.booking_number, /^SMC\d{8}\d{3,}$/);
   assert.equal(Number(first.total_amount_minor), 10500);
   assert.equal(first.status, 'PENDING_PAYMENT');
   await assert.rejects(store.createCheckoutBooking(input, quote, key, 'a'.repeat(64)), { code: 'IDEMPOTENCY_CONFLICT' });

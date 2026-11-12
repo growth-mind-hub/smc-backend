@@ -48,3 +48,7 @@ Operational statuses: `NEW`, `CONFIRMED`, `ASSIGNED`, `IN_PROGRESS`, `COMPLETED`
 `driver_name` and `driver_phone` are plain-text columns. Phone text may include spaces or local formatting. Send an empty string to clear either field. Omitted fields stay unchanged.
 Migration 012 converts existing driver lists to comma-separated text before removing the JSON column.
 Missing bookings return 404, invalid input 400, invalid/missing tokens 401, and missing JSON content type 415.
+
+## Booking number prefix
+
+Migration 030 makes new public booking numbers start with SMC (for example SMC20261111001). It preserves the existing Singapore-date format and sequence. Existing BK booking numbers remain unchanged and are accepted by admin reads/updates/deletes, email and WhatsApp trigger endpoints. Internal booking UUIDs are unchanged. Apply the migration before expecting the new prefix in checkout responses or emails.

@@ -54,7 +54,7 @@ export function bookingRepository(pool, transaction) {
         Math.round(quote.route.distance_km * 1000), input.hours ?? null,
         Math.round(quote.vehicle_amount * 100), Math.round(quote.distance_amount * 100), Math.round(quote.add_on_amount * 100),
         Math.round(quote.total_amount * 100), quote.currency, JSON.stringify(quote),
-        manual ? 'MANUAL' : 'STRIPE', manual ? 'CONFIRMED' : 'NEW',
+        manual ? 'MANUAL' : input.payment_method === 'PAYNOW' ? 'PAYNOW' : 'STRIPE', manual ? 'CONFIRMED' : 'NEW',
         manual ? input.driver_name ?? '' : '', manual ? input.driver_phone ?? '' : '',
         manual ? 0 : Math.round((quote.card_surcharge_amount ?? 0) * 100)]);
       const booking = rows[0] ?? await getByKey(key, client);
@@ -86,7 +86,7 @@ export function bookingRepository(pool, transaction) {
       if (typeof id !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)) { return { ignored: true }; }
       const booking = (await client.query('SELECT * FROM bookings WHERE id = $1 FOR UPDATE', [id])).rows[0];
       if (!booking) { return { ignored: true }; }
-      if (booking.payment_method === 'MANUAL') { return { ignored: true }; }
+      if (['MANUAL', 'PAYNOW'].includes(booking.payment_method)) { return { ignored: true }; }
       if (!session.id || session.mode !== 'payment' || session.client_reference_id !== id ||
         (session.metadata.booking_uuid && session.metadata.booking_id !== booking.booking_number) ||
         session.amount_total !== Number(booking.total_amount_minor) || session.currency?.toUpperCase() !== booking.currency ||

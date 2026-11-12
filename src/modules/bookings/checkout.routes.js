@@ -28,7 +28,8 @@ export function checkoutRoutes({ vehicleStore: store, distanceProvider, paymentP
     res.setHeader('Idempotency-Key', key);
     const requestHash = createHash('sha256').update(JSON.stringify(input)).digest('hex');
     try {
-      paymentProvider.assertCheckoutReady();
+      const isPaynow = input.payment_method === 'PAYNOW';
+      if (!isPaynow) { paymentProvider.assertCheckoutReady(); }
       let booking = await store.getCheckoutByKey(key);
       if (booking && booking.request_hash !== requestHash) { throw failure('IDEMPOTENCY_CONFLICT', 'Idempotency-Key was already used for different booking details.'); }
       if (!booking) {
@@ -37,13 +38,14 @@ export function checkoutRoutes({ vehicleStore: store, distanceProvider, paymentP
         const distanceMeters = await distanceProvider(input.pickup, input.drop);
         const result = applyDistancePricing(input, baseQuote, catalog.distance_rules, distanceMeters);
         if (result.quote_status === 'CONTACT_SUPPORT') { return res.json(result); }
-        const quote = applyCardSurcharge(result.quote);
+        const quote = isPaynow ? result.quote : applyCardSurcharge(result.quote);
         const totalMinor = Math.round(quote.total_amount * 100);
         if (quote.currency !== 'SGD' || !Number.isSafeInteger(totalMinor) || totalMinor < 50 || totalMinor > 99999999) {
           throw failure('CHECKOUT_NOT_SUPPORTED', 'Checkout requires an SGD total between 0.50 and 999999.99.');
         }
         booking = await store.createCheckoutBooking(input, quote, key, requestHash);
       }
+      if (isPaynow) { return res.json({ ...checkoutResponse(booking), stripe_checkout_url: null }); }
       if (booking.status !== 'PENDING_PAYMENT') { throw failure('BOOKING_NOT_PENDING', 'This booking is no longer awaiting payment.'); }
       const remaining = new Date(booking.checkout_expires_at).getTime() - Date.now();
       if (remaining <= 0 || (!booking.stripe_session_id && remaining < 30 * 60000)) {
