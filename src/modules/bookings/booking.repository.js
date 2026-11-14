@@ -46,8 +46,9 @@ export function bookingRepository(pool, transaction) {
         (id, idempotency_key, request_hash, customer_name, customer_email, customer_phone,
         vehicle_id, service_id, catalog_id, pickup_address, drop_address, distance_meters, hours,
         vehicle_amount_minor, distance_amount_minor, add_on_amount_minor, total_amount_minor, currency, quote_snapshot,
-        payment_method, booking_status, driver_name, driver_phone, card_surcharge_minor)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24)
+        payment_method, booking_status, driver_name, driver_phone, card_surcharge_minor, whatsapp_opt_in, whatsapp_opt_in_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25,
+          CASE WHEN $25 THEN CURRENT_TIMESTAMP ELSE NULL END)
         ON CONFLICT (idempotency_key) DO NOTHING RETURNING *`,
       [randomUUID(), key, requestHash, input.customer.name, input.customer.email, input.customer.phone,
         input.vehicle_id, input.service_id, quote.catalog_id, input.pickup.address, input.drop.address,
@@ -56,7 +57,7 @@ export function bookingRepository(pool, transaction) {
         Math.round(quote.total_amount * 100), quote.currency, JSON.stringify(quote),
         manual ? 'MANUAL' : input.payment_method === 'PAYNOW' ? 'PAYNOW' : 'STRIPE', manual ? 'CONFIRMED' : 'NEW',
         manual ? input.driver_name ?? '' : '', manual ? input.driver_phone ?? '' : '',
-        manual ? 0 : Math.round((quote.card_surcharge_amount ?? 0) * 100)]);
+        manual ? 0 : Math.round((quote.card_surcharge_amount ?? 0) * 100), input.whatsapp_opt_in === true]);
       const booking = rows[0] ?? await getByKey(key, client);
       if (booking.request_hash !== requestHash) { throw failure('IDEMPOTENCY_CONFLICT', 'Idempotency-Key was already used for different booking details.'); }
       if (rows.length) {

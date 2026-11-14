@@ -258,9 +258,9 @@ Database updates already verified in the configured database during this work: f
 
 ## Send WhatsApp booking confirmation
 
-POST `/api/v1/bookings/:id/whatsapp-confirmation` (also under `/api`). Requires admin bearer authentication, JSON body `{"whatsapp_opt_in":true}`, and migration 023. Send only after obtaining customer consent. The recipient and five approved template parameters come from the stored booking. Paid bookings and confirmed manual bookings are eligible; cancelled bookings are rejected.
+POST `/api/v1/bookings/:id/whatsapp-confirmation` (also under `/api`). Requires admin bearer authentication, JSON body `{"whatsapp_opt_in":true}`, and migration 023. Send only after obtaining customer consent. The recipient and nine Twilio Content template parameters come from the stored booking. Paid bookings and confirmed manual bookings are eligible; cancelled bookings are rejected.
 
-Returns 202 with `status: ACCEPTED` and `message_id` when Meta accepts the message; this does not confirm delivery. Repeat calls return the original message ID without sending again. Uncertain sends require operator review before any resend. The API is explicitly triggered; Stripe payment events do not automatically send WhatsApp messages. Meta webhook verification and event storage are available at /api/v1/whatsapp/webhook; configure the verify token and App Secret and apply migration 026.
+Returns 202 with `status: ACCEPTED` and `message_id` when Twilio accepts the message; this does not confirm delivery. Repeat calls return the original message ID without sending again. Uncertain sends require operator review before any resend. WhatsApp can be explicitly triggered or sent after verified successful Stripe payment for bookings with stored whatsapp_opt_in: true. Apply migration 034 and collect consent in the checkout flow. Meta webhook verification and event storage are available at /api/v1/whatsapp/webhook; configure the verify token and App Secret and apply migration 026.
 
 See [WhatsApp integration and setup](whatsapp-api.md) for required server environment variables, template order, responses and recovery limitations.
 
@@ -281,3 +281,7 @@ For wheelchair transport, call GET `/api/v1/vehicles/recommend?persons=3&luggage
 ## Direct PayNow booking
 
 Use POST `/api/v1/bookings/checkout` with the existing checkout fields and `"payment_method":"paynow"`. It saves a PAYNOW booking with payment pending and returns stripe_checkout_url: null. No Stripe session, QR generation, payment collection or 10% card surcharge is involved. Reuse the Idempotency-Key only for identical retries. Apply migration 032. This does not verify receipt of payment or send a paid-booking email. Admin manual booking is unchanged. See checkout-api.md.
+
+## WhatsApp consent at checkout
+
+Checkout accepts optional boolean whatsapp_opt_in. After collecting customer consent, include `"whatsapp_opt_in":true` in the normal booking request. Apply migration 034 to store this consent and timestamp. Once Stripe confirms successful payment through the verified webhook, WhatsApp confirmation is sent using the approved nine-variable template. Legacy/non-consenting bookings are skipped. Accepted notifications are deduplicated against admin-triggered confirmations. Pending PayNow creation does not trigger paid notifications. See whatsapp-api.md for the complete template and setup.

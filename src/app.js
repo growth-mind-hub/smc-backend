@@ -91,7 +91,7 @@ export function createApp({
   app.post(
     ['/api/payments/stripe/webhook', '/api/v1/payments/stripe/webhook'],
     express.raw({ type: 'application/json', limit: '64kb' }),
-    stripeWebhook({ vehicleStore, paymentProvider, mailer, logger }),
+    stripeWebhook({ vehicleStore, paymentProvider, mailer, whatsapp, logger }),
   );
 
   const metaWebhook = whatsappWebhook({ ...whatsappWebhookConfig, vehicleStore });

@@ -5,6 +5,7 @@ import { validateCheckout, normalizeCheckout } from './checkout.validation.js';
 import { calculateQuote, applyDistancePricing } from '../add-ons/quote.js';
 import { applyCardSurcharge } from './card-surcharge.js';
 import { sendPaidBookingEmail } from './booking-email.js';
+import { sendPaidBookingWhatsapp } from './whatsapp.js';
 
 const failure = (code, message) => Object.assign(new Error(message), { code });
 const checkoutResponse = booking => ({ success: true,
@@ -72,7 +73,7 @@ export function checkoutRoutes({ vehicleStore: store, distanceProvider, paymentP
   return router;
 }
 
-export function stripeWebhook({ vehicleStore: store, paymentProvider, mailer, logger = console }) {
+export function stripeWebhook({ vehicleStore: store, paymentProvider, mailer, whatsapp, logger = console }) {
   return async (req, res, next) => {
     res.setHeader('Cache-Control', 'no-store');
     try {
@@ -81,9 +82,18 @@ export function stripeWebhook({ vehicleStore: store, paymentProvider, mailer, lo
       if (result?.status === 'PAID' && result.booking_id &&
         ['checkout.session.completed', 'checkout.session.async_payment_succeeded'].includes(event.type) &&
         event.data?.object?.payment_status === 'paid') {
-        const email = await sendPaidBookingEmail(store, mailer, result.booking_id);
-        logger.info(JSON.stringify({ event: 'paid_booking_email', requestId: req.requestId,
-          status: email.status ?? 'SKIPPED', duplicate: email.duplicate ?? false }));
+        const notifications = await Promise.allSettled([
+          sendPaidBookingEmail(store, mailer, result.booking_id),
+          sendPaidBookingWhatsapp(store, whatsapp, result.booking_id),
+        ]);
+        for (const [index, notification] of notifications.entries()) {
+          const value = notification.status === 'fulfilled' ? notification.value : {};
+          logger.info(JSON.stringify({ event: index === 0 ? 'paid_booking_email' : 'paid_booking_whatsapp',
+            requestId: req.requestId, status: notification.status === 'rejected' ? 'ERROR' : value.status ?? 'SKIPPED',
+            duplicate: value.duplicate ?? false }));
+        }
+        const failed = notifications.find(notification => notification.status === 'rejected');
+        if (failed) { throw failed.reason; }
       }
       return res.json({ received: true });
     } catch (err) {

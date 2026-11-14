@@ -4,8 +4,9 @@ const object = value => value !== null && typeof value === 'object' && !Array.is
 
 export function validateCheckout(body, idempotencyKey) {
   if (!object(body)) { return ['A JSON object is required.']; }
-  const { customer, payment_method: paymentMethod, ...quoteInput } = body;
+  const { customer, payment_method: paymentMethod, whatsapp_opt_in: whatsappOptIn, ...quoteInput } = body;
   const errors = validateQuote(quoteInput);
+  if (whatsappOptIn !== undefined && typeof whatsappOptIn !== 'boolean') { errors.push('whatsapp_opt_in must be a boolean.'); }
   if (!['STRIPE', 'paynow', 'PAYNOW'].includes(paymentMethod)) { errors.push('payment_method must be STRIPE or paynow.'); }
   if (!object(customer)) { errors.push('customer must contain name, email and phone.'); }
   else {
@@ -24,5 +25,6 @@ export function normalizeCheckout(body) {
     pickup: { address: body.pickup.address.trim() }, drop: { address: body.drop.address.trim() },
     add_ons: body.add_ons.map(item => ({ add_on_id: item.add_on_id, quantity: item.quantity })).sort((a, b) => a.add_on_id - b.add_on_id),
     ...(body.hours !== undefined ? { hours: body.hours } : {}),
+    ...(body.whatsapp_opt_in !== undefined ? { whatsapp_opt_in: body.whatsapp_opt_in } : {}),
     payment_method: ['paynow', 'PAYNOW'].includes(body.payment_method) ? 'PAYNOW' : 'STRIPE' };
 }

@@ -2,11 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import request from 'supertest';
 import { createApp } from '../src/app.js';
-import { whatsappProvider } from '../src/modules/bookings/whatsapp.js';
+import { whatsappProvider, confirmationParameters } from '../src/modules/bookings/whatsapp.js';
 
 const booking = { id: 'a181390c-b26b-4718-a634-3edfdd3d3cbe', booking_number: 'BK20261021001',
   customer_name: 'Customer', customer_phone: '+6591234567', currency: 'SGD', total_amount_minor: '8000',
-  pickup_address: 'Airport', drop_address: 'Hotel', status: 'PAID', booking_status: 'NEW', payment_method: 'STRIPE' };
+  pickup_address: 'Airport', drop_address: 'Hotel', status: 'PAID', booking_status: 'NEW', payment_method: 'STRIPE',
+  vehicle_amount_minor: '8000', quote_snapshot: { vehicle: { name: 'Toyota Alphard / Vellfire' }, add_ons: [] } };
 
 function fixture({ record = booking, fail = false } = {}) {
   let notification;
@@ -55,21 +56,46 @@ test('uncertain sends are persisted and cannot be blindly retried', async () => 
   assert.equal(f.sends(), 1);
 });
 
-test('Meta receives stored recipient and the five approved template parameters', async () => {
-  const provider = whatsappProvider({ token: 'test-token', phoneNumberId: '12345', version: 'v23.0',
-    template: 'booking_confirmation', language: 'en', async fetchImpl(url, options) {
-      assert.equal(url, 'https://graph.facebook.com/v23.0/12345/messages');
-      assert.equal(options.headers.Authorization, 'Bearer test-token');
-      const payload = JSON.parse(options.body);
-      assert.equal(payload.to, '6591234567');
-      assert.equal(payload.template.name, 'booking_confirmation');
-      assert.deepEqual(payload.template.components[0].parameters.map(p => p.text),
-        ['Customer', 'BK20261021001', 'SGD 80.00', 'Airport', 'Hotel']);
-      return { ok: true, async json() { return { messages: [{ id: 'wamid.test' }] }; } };
-    } });
-  assert.equal(await provider.sendConfirmation(booking), 'wamid.test');
-  assert.throws(() => whatsappProvider({ token: '' }).assertReady(), { code: 'WHATSAPP_NOT_CONFIGURED' });
-  const rejected = whatsappProvider({ token: 'test-token', phoneNumberId: '12345', version: 'v23.0',
-    template: 'booking_confirmation', language: 'en', async fetchImpl() { return { ok: false }; } });
-  await assert.rejects(() => rejected.sendConfirmation(booking));
+test('Twilio receives the stored recipient, approved ContentSid and exact template variable order', async () => {
+  const accountSid = 'AC' + '1'.repeat(32);
+  const contentSid = 'HX' + '2'.repeat(32);
+  const sid = 'SM' + '3'.repeat(32);
+  const config = { accountSid, contentSid, authToken: 'test-token', from: 'whatsapp:+6589536201' };
+  const provider = whatsappProvider({ ...config, async fetchImpl(url, options) {
+    assert.equal(url, `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`);
+    assert.equal(options.headers.Authorization, 'Basic ' + Buffer.from(`${accountSid}:test-token`).toString('base64'));
+    assert.equal(options.headers['Content-Type'], 'application/x-www-form-urlencoded');
+    const fields = new URLSearchParams(options.body);
+    assert.equal(fields.get('To'), 'whatsapp:+6591234567');
+    assert.equal(fields.get('From'), config.from);
+    assert.equal(fields.get('ContentSid'), contentSid);
+    assert.deepEqual(JSON.parse(fields.get('ContentVariables')), {
+      '1': 'Customer', '2': '+6591234567', '3': 'BK20261021001', '4': 'Toyota Alphard / Vellfire', '5': 'Airport',
+      '6': 'Hotel', '7': 'Vehicle fare: SGD 80.00', '8': '80.00', '9': 'Payment received. Thank you.',
+    });
+    return { ok: true, async json() { return { sid, status: 'queued' }; } };
+  } });
+  assert.equal(await provider.sendConfirmation(booking), sid);
+  const mediaSid = 'MM' + '4'.repeat(32);
+  assert.equal(await whatsappProvider({ ...config, async fetchImpl() {
+    return { ok: true, async json() { return { sid: mediaSid, status: 'queued' }; } };
+  } }).sendConfirmation(booking), mediaSid);
+  assert.throws(() => whatsappProvider({ ...config, authToken: '' }).assertReady(), { code: 'WHATSAPP_NOT_CONFIGURED' });
+  await assert.rejects(() => whatsappProvider({ ...config, async fetchImpl() { return { ok: false }; } }).sendConfirmation(booking));
+  await assert.rejects(() => whatsappProvider({ ...config, async fetchImpl() {
+    return { ok: true, async json() { return { sid, status: 'failed' }; } };
+  } }).sendConfirmation(booking));
+});
+
+test('confirmation breakdown and payment status match the approved booking template', () => {
+  const values = confirmationParameters({ ...booking, status: 'PENDING_PAYMENT', total_amount_minor: 14850,
+    distance_amount_minor: 3500, add_on_amount_minor: 2000, card_surcharge_minor: 1350,
+    quote_snapshot: { ...booking.quote_snapshot, add_ons: [{ name: 'Arrival Driveway Pickup', quantity: 1, amount: 20 }] } });
+  assert.equal(values.length, 9);
+  assert.equal(values[2], booking.booking_number);
+  assert.equal(values[5], 'Hotel');
+  assert.equal(values[6], 'Vehicle fare: SGD 80.00; Distance charge: SGD 35.00; Arrival Driveway Pickup x 1: SGD 20.00; Card surcharge: SGD 13.50');
+  assert.equal(values[7], '148.50');
+  assert.match(values[8], /Payment pending/);
+  assert.ok(values.every(value => !/[\r\n\t]/.test(value)));
 });

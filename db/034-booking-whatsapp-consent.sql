@@ -1,0 +1,2 @@
+ALTER TABLE bookings ADD COLUMN whatsapp_opt_in BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE bookings ADD COLUMN whatsapp_opt_in_at TIMESTAMPTZ;

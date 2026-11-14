@@ -142,6 +142,10 @@ export async function migrate(pool) {
       await client.query(await readFile(new URL('../db/033-alphard-recommendation-limits.sql', import.meta.url), 'utf8'));
       await client.query('INSERT INTO schema_migrations (version) VALUES (33)');
     }
+    if (!(await client.query('SELECT version FROM schema_migrations WHERE version = 34')).rowCount) {
+      await client.query(await readFile(new URL('../db/034-booking-whatsapp-consent.sql', import.meta.url), 'utf8'));
+      await client.query('INSERT INTO schema_migrations (version) VALUES (34)');
+    }
     await client.query('COMMIT');
   } catch (err) {
     await client.query('ROLLBACK');
