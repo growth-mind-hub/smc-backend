@@ -72,7 +72,8 @@ test('Hostinger transport uses TLS settings and stored recipient', async () => {
       return { async sendMail(message) {
         assert.equal(message.from.address, 'booking@singaporemaxicabs.com.sg');
         assert.equal(message.to.address, booking.customer_email);
-        return { messageId: 'email-test', accepted: [booking.customer_email] };
+        assert.equal(message.bcc, 'booking@singaporemaxicabs.com.sg');
+        return { messageId: 'email-test', accepted: [booking.customer_email, message.bcc] };
       } };
     } });
     assert.equal(await mailer.sendConfirmation(booking), 'email-test');

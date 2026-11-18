@@ -4,6 +4,7 @@ import { requireAdmin } from '../../middleware/admin.js';
 import { sendError } from '../../middleware/errors.js';
 
 const emailAddress = value => typeof value === 'string' && value.length <= 254 && /^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(value);
+const bookingInbox = 'booking@singaporemaxicabs.com.sg';
 const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char =>
   ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
 
@@ -50,7 +51,7 @@ export async function sendPaidBookingEmail(store, mailer, id) {
 }
 
 export function bookingMailer({ host = process.env.SMTP_HOST ?? 'smtp.hostinger.com',
-  port = Number(process.env.SMTP_PORT ?? 465), user = process.env.SMTP_USER ?? 'booking@singaporemaxicabs.com.sg',
+  port = Number(process.env.SMTP_PORT ?? 465), user = process.env.SMTP_USER ?? bookingInbox,
   password = process.env.SMTP_PASSWORD, createTransport = nodemailer.createTransport } = {}) {
   let transport;
   return {
@@ -65,9 +66,17 @@ export function bookingMailer({ host = process.env.SMTP_HOST ?? 'smtp.hostinger.
       transport ??= createTransport({ host, port, secure: port === 465, requireTLS: port === 587,
         auth: { user, pass: password }, connectionTimeout: 10000, greetingTimeout: 10000, socketTimeout: 20000,
         disableFileAccess: true, disableUrlAccess: true });
+      const customerAddress = booking.customer_email.toLowerCase();
+      const copyBookingInbox = booking.payment_method === 'STRIPE' && booking.status === 'PAID' &&
+        customerAddress !== bookingInbox;
       const info = await transport.sendMail({ from: { name: 'Singapore Maxicabs', address: user },
-        to: { name: booking.customer_name, address: booking.customer_email }, ...bookingEmailContent(booking) });
-      if (!info.messageId || !info.accepted?.length) { throw new Error('SMTP acceptance could not be confirmed.'); }
+        to: { name: booking.customer_name, address: booking.customer_email },
+        ...(copyBookingInbox ? { bcc: bookingInbox } : {}), ...bookingEmailContent(booking) });
+      const accepted = info.accepted?.map(address => address.toLowerCase()) ?? [];
+      if (!info.messageId || !accepted.includes(customerAddress) ||
+        (copyBookingInbox && !accepted.includes(bookingInbox))) {
+        throw new Error('SMTP acceptance could not be confirmed.');
+      }
       return info.messageId;
     },
   };
