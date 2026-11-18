@@ -1,13 +1,19 @@
 import { validateQuote } from '../add-ons/add-on.validation.js';
 
 const object = value => value !== null && typeof value === 'object' && !Array.isArray(value);
+const checkoutPaymentMethod = ({ paymentType, payment_method: legacyMethod }) => {
+  const value = paymentType === undefined ? legacyMethod : paymentType;
+  return typeof value === 'string' ? value.toUpperCase() : undefined;
+};
 
 export function validateCheckout(body, idempotencyKey) {
   if (!object(body)) { return ['A JSON object is required.']; }
-  const { customer, payment_method: paymentMethod, whatsapp_opt_in: whatsappOptIn, ...quoteInput } = body;
+  const { customer, paymentType, payment_method: legacyMethod, whatsapp_opt_in: whatsappOptIn, ...quoteInput } = body;
   const errors = validateQuote(quoteInput);
   if (whatsappOptIn !== undefined && typeof whatsappOptIn !== 'boolean') { errors.push('whatsapp_opt_in must be a boolean.'); }
-  if (!['STRIPE', 'paynow', 'PAYNOW'].includes(paymentMethod)) { errors.push('payment_method must be STRIPE or paynow.'); }
+  if (!['STRIPE', 'PAYNOW'].includes(checkoutPaymentMethod({ paymentType, payment_method: legacyMethod }))) {
+    errors.push('paymentType must be stripe or paynow.');
+  }
   if (!object(customer)) { errors.push('customer must contain name, email and phone.'); }
   else {
     for (const key of Object.keys(customer)) { if (!['name', 'email', 'phone'].includes(key)) { errors.push(`customer.${key} is not supported.`); } }
@@ -26,5 +32,5 @@ export function normalizeCheckout(body) {
     add_ons: body.add_ons.map(item => ({ add_on_id: item.add_on_id, quantity: item.quantity })).sort((a, b) => a.add_on_id - b.add_on_id),
     ...(body.hours !== undefined ? { hours: body.hours } : {}),
     ...(body.whatsapp_opt_in !== undefined ? { whatsapp_opt_in: body.whatsapp_opt_in } : {}),
-    payment_method: ['paynow', 'PAYNOW'].includes(body.payment_method) ? 'PAYNOW' : 'STRIPE' };
+    payment_method: checkoutPaymentMethod(body) };
 }

@@ -58,7 +58,8 @@ function fixture({ distanceProvider = async () => 29400, paymentProvider, catalo
 test('checkout recalculates fare, saves a snapshot and returns a Stripe URL on both prefixes', async () => {
   const f = fixture();
   for (const prefix of ['/api', '/api/v1']) {
-    const { body, headers } = await request(f.app).post(`${prefix}/bookings/checkout`).send(input).expect(200);
+    const { body, headers } = await request(f.app).post(`${prefix}/bookings/checkout`)
+      .send({ ...input, payment_method: undefined, paymentType: 'stripe' }).expect(200);
     assert.deepEqual(body, { success: true, booking_id: 'BK20261003001', payment_status: 'PENDING',
       amount: 159.5, subtotal_amount: 145, card_surcharge_amount: 14.5, card_surcharge_percent: 10,
       currency: 'SGD', stripe_checkout_url: 'https://checkout.stripe.com/test' });
@@ -79,7 +80,7 @@ test('PayNow saves an unsurcharged pending booking without Stripe configuration 
   for (const prefix of ['/api', '/api/v1']) {
     const key = randomUUID();
     const send = body => request(f.app).post(`${prefix}/bookings/checkout`).set('Idempotency-Key', key).send(body);
-    const body = { ...input, payment_method: 'paynow' };
+    const body = { ...input, paymentType: 'paynow' };
     const first = await send(body).expect(200);
     assert.equal(first.body.amount, 145);
     assert.equal(first.body.card_surcharge_amount, 0);
@@ -90,7 +91,7 @@ test('PayNow saves an unsurcharged pending booking without Stripe configuration 
     assert.equal(saved.payment_method, 'PAYNOW');
     assert.equal(saved.stripe_session_id, null);
     saved.checkout_expires_at = new Date(0);
-    const retry = await send({ ...body, payment_method: 'PAYNOW' }).expect(200);
+    const retry = await send({ ...input, payment_method: 'PAYNOW' }).expect(200);
     assert.deepEqual(retry.body, first.body);
     await send({ ...body, customer: { ...body.customer, name: 'Changed' } }).expect(409);
   }
@@ -107,7 +108,8 @@ test('checkout rejects frontend prices and invalid customer information before c
   const f = fixture();
   for (const body of [{ ...input, amount: 125 }, { ...input, currency: 'SGD' }, { ...input, customer: null },
     { ...input, customer: { ...input.customer, email: 'bad' } }, { ...input, customer: { ...input.customer, phone: '+65XXXXXXXX' } },
-    { ...input, customer: { ...input.customer, name: ' ' } }, { ...input, payment_method: 'CASH' }]) {
+    { ...input, customer: { ...input.customer, name: ' ' } }, { ...input, payment_method: 'CASH' },
+    { ...input, paymentType: 'cash' }, { ...input, paymentType: null }]) {
     await request(f.app).post('/api/bookings/checkout').send(body).expect(400);
   }
   await request(f.app).post('/api/bookings/checkout').set('Idempotency-Key', 'bad').send(input).expect(400);

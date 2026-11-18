@@ -19,6 +19,7 @@ export function bookingAdminRoutes({ vehicleStore: store, adminApiKey, adminAuth
     if (!body || typeof body !== 'object' || Array.isArray(body)) { return invalid(req, res, 'A JSON object is required.'); }
     const { driver_name = '', driver_phone = '', ...details } = body;
     if (Object.hasOwn(details, 'payment_method')) { return invalid(req, res, 'Manual bookings do not accept payment_method.'); }
+    if (Object.hasOwn(details, 'paymentType')) { return invalid(req, res, 'Manual bookings do not accept paymentType.'); }
     const errors = validateCheckout({ ...details, payment_method: 'STRIPE' }, req.get('Idempotency-Key'));
     if (typeof driver_name !== 'string' || typeof driver_phone !== 'string') { errors.push('Driver name and phone must be plain text.'); }
     if (errors.length) { return sendError(req, res, 400, 'INVALID_INPUT', 'Check the manual booking details.', errors); }

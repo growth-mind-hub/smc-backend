@@ -64,7 +64,7 @@ Set `Content-Type: application/json`. No admin token is needed. Set `Idempotency
     { "add_on_id": 3, "quantity": 1 },
     { "add_on_id": 4, "quantity": 2 }
   ],
-  "payment_method": "STRIPE"
+  "paymentType": "stripe"
 }
 ```
 
@@ -105,7 +105,7 @@ Checkout responses use `Cache-Control: no-store`. There is no public customer/bo
 
 ## Direct PayNow booking (no Stripe)
 
-POST `/api/v1/bookings/checkout` with the normal checkout payload and `"payment_method":"paynow"` (uppercase PAYNOW is also accepted). The backend calculates the fare and saves a booking with payment_method PAYNOW and status PENDING_PAYMENT. It does not require Stripe credentials, create a Stripe session, generate a QR code, collect payment or apply the 10% card surcharge. The response uses the existing shape, with payment_status PENDING and stripe_checkout_url null. Contact-support rules still return CONTACT_SUPPORT without saving a booking.
+POST `/api/v1/bookings/checkout` with the normal checkout payload and `"paymentType":"paynow"` (uppercase PAYNOW is also accepted). The backend calculates the fare and saves a booking with payment_method PAYNOW and status PENDING_PAYMENT. It does not require Stripe credentials, create a Stripe session, generate a QR code, collect payment or apply the 10% card surcharge. The response uses the existing shape, with payment_status PENDING and stripe_checkout_url null. Contact-support rules still return CONTACT_SUPPORT without saving a booking.
 
 Identical retries with the same Idempotency-Key return the existing booking; changed input returns 409. PayNow bookings are not subject to Stripe session expiry checks. Stripe events cannot mark these bookings paid. Payment reconciliation/marking paid remains a separate workflow; automatic paid-confirmation emails are not sent just by creating this pending booking. The admin manual-booking endpoint remains unchanged.
 
